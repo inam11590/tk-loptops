@@ -7,14 +7,12 @@ import {
   Heart,
   Menu,
   Phone,
-  Search,
   ShoppingBag,
   User,
 } from "lucide-react";
 import { SITE_CONFIG } from "@/lib/config";
 import { Logo } from "@/components/common/logo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetClose,
@@ -24,14 +22,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { SearchBar } from "@/components/layout/search-bar";
 
 /**
- * Responsive mobile navigation drawer (hamburger menu) with search,
+ * Responsive mobile navigation drawer (hamburger menu) with live debounced search,
  * main category navigation links, and account/wishlist quick links.
  */
 export function MobileNav() {
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           variant="ghost"
@@ -60,24 +61,8 @@ export function MobileNav() {
             </SheetDescription>
           </SheetHeader>
 
-          {/* Mobile Search Form */}
-          <form
-            role="search"
-            aria-label="Search laptops on mobile"
-            onSubmit={(e) => e.preventDefault()}
-            className="relative"
-          >
-            <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              type="search"
-              placeholder="Search HP Spectre, Dell XPS..."
-              aria-label="Search laptops"
-              className="pl-10"
-            />
-          </form>
+          {/* Mobile Live Search Bar */}
+          <SearchBar onNavigate={() => setOpen(false)} />
 
           {/* Primary Navigation Links */}
           <nav aria-label="Mobile navigation">

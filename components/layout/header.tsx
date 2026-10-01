@@ -1,19 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Search, ShoppingCart, User } from "lucide-react";
+import { Heart, ShoppingCart, User } from "lucide-react";
 import { SITE_CONFIG } from "@/lib/config";
 import { useShopStore } from "@/store/use-store";
 import { Container } from "@/components/common/container";
 import { Logo } from "@/components/common/logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { SearchBar } from "@/components/layout/search-bar";
 
 /**
- * Sticky global header with TK Laptop logo, search input, desktop navigation links,
- * theme toggle, wishlist, shopping cart (with item count badge), and account button.
+ * Sticky global header with TK Laptop logo, live debounced SearchBar,
+ * desktop navigation links, theme toggle, wishlist, shopping cart badge, and account button.
  */
 export function Header() {
   const cartItems = useShopStore((state) => state.cartItems);
@@ -44,26 +44,9 @@ export function Header() {
           ))}
         </nav>
 
-        {/* Right: Search Bar + Action Icons */}
+        {/* Right: Live Debounced Search Bar + Action Icons */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Desktop Search Input */}
-          <form
-            role="search"
-            aria-label="Search laptops"
-            onSubmit={(e) => e.preventDefault()}
-            className="relative hidden w-56 xl:block 2xl:w-72"
-          >
-            <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              type="search"
-              placeholder="Search HP or Dell laptops..."
-              aria-label="Search HP or Dell laptops"
-              className="h-10 rounded-xl pl-10 pr-4 text-sm"
-            />
-          </form>
+          <SearchBar className="hidden w-60 md:block xl:w-72" />
 
           {/* Theme Toggle */}
           <ThemeToggle />
