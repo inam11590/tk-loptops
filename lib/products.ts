@@ -593,3 +593,244 @@ export function filterAndSortProducts(
     endIndex,
   };
 }
+
+const SLUG_ALIASES: Record<string, string> = {
+  "hp-pavilion-15": "hp-pavilion-plus-14",
+};
+
+/**
+ * Finds a single product by slug (or known alias).
+ */
+export function getProductBySlug(
+  slug: string,
+  products: Product[] = PRODUCTS
+): Product | undefined {
+  const normalized = slug.trim().toLowerCase();
+  const targetSlug = SLUG_ALIASES[normalized] ?? normalized;
+  return products.find((p) => p.slug.toLowerCase() === targetSlug);
+}
+
+/**
+ * Returns N similar laptops (prioritizing same category, then same brand, closest price)
+ * for the "Compare with similar laptops" table.
+ */
+export function getSimilarProductsForComparison(
+  product: Product,
+  products: Product[] = PRODUCTS,
+  count = 2
+): Product[] {
+  return products
+    .filter((p) => p.id !== product.id)
+    .sort((a, b) => {
+      const aScore =
+        (a.category === product.category ? 4 : 0) +
+        (a.brand === product.brand ? 2 : 0) -
+        Math.abs(a.price - product.price) / 1000;
+      const bScore =
+        (b.category === product.category ? 4 : 0) +
+        (b.brand === product.brand ? 2 : 0) -
+        Math.abs(b.price - product.price) / 1000;
+      return bScore - aScore;
+    })
+    .slice(0, count);
+}
+
+/**
+ * Returns 4 to 6 related laptops (same category or brand) for the Related Products carousel.
+ */
+export function getRelatedProducts(
+  product: Product,
+  products: Product[] = PRODUCTS,
+  limit = 6
+): Product[] {
+  return products
+    .filter(
+      (p) =>
+        p.id !== product.id &&
+        (p.category === product.category || p.brand === product.brand)
+    )
+    .sort((a, b) => {
+      const aSameCat = a.category === product.category ? 1 : 0;
+      const bSameCat = b.category === product.category ? 1 : 0;
+      if (bSameCat !== aSameCat) return bSameCat - aSameCat;
+      return b.rating - a.rating;
+    })
+    .slice(0, limit);
+}
+
+export interface SpecGroup {
+  groupTitle: string;
+  rows: { label: string; value: string }[];
+}
+
+/**
+ * Builds the 8 grouped specification sections required by the Specifications tab:
+ * Performance, Display, Memory and Storage, Graphics, Battery,
+ * Connectivity and Ports, Physical, and Software.
+ */
+export function getGroupedSpecsForProduct(product: Product): SpecGroup[] {
+  const { specs, brand, category } = product;
+  const gpuType = extractGraphicsType(specs.gpu);
+  const screenSize = extractScreenSize(specs.display);
+
+  const isGaming = category === "gaming";
+  const isBusiness = category === "business" || category === "ultrabook";
+
+  return [
+    {
+      groupTitle: "Performance",
+      rows: [
+        { label: "Processor", value: specs.processor },
+        {
+          label: "Architecture & Cache",
+          value: specs.processor.includes("Ultra")
+            ? "Intel Meteor Lake with Integrated AI NPU (Up to 24MB L3 Cache)"
+            : specs.processor.includes("Ryzen")
+              ? "AMD Zen 4 Architecture with Ryzen AI Engine (Up to 16MB L3 Cache)"
+              : "Multi-Core Hybrid Performance Architecture (Up to 24MB Smart Cache)",
+        },
+        {
+          label: "Thermal Solution",
+          value: isGaming
+            ? brand === "HP"
+              ? "OMEN Tempest Cooling with Dual 12V Fans & Vapor Chamber"
+              : "Alienware Cryo-Tech™ Quad-Fan Thermal Architecture"
+            : "Whisper-Quiet Dual Heat-Pipe Adaptive Thermal System",
+        },
+      ],
+    },
+    {
+      groupTitle: "Display",
+      rows: [
+        { label: "Panel Specification", value: specs.display },
+        { label: "Screen Size Class", value: screenSize },
+        {
+          label: "Color Gamut & Brightness",
+          value: specs.display.includes("OLED")
+            ? "100% DCI-P3, VESA DisplayHDR TrueBlack 500, 500 nits Peak"
+            : isGaming
+              ? "100% sRGB, NVIDIA G-SYNC / Adaptive-Sync, 350 nits"
+              : "100% sRGB Low Blue Light Eye-Safe Certified",
+        },
+      ],
+    },
+    {
+      groupTitle: "Memory and Storage",
+      rows: [
+        { label: "System Memory (RAM)", value: specs.ram },
+        { label: "Primary SSD Storage", value: specs.storage },
+        {
+          label: "Storage Interface",
+          value: "M.2 2280 PCIe Gen4 x4 NVMe Solid State Drive",
+        },
+      ],
+    },
+    {
+      groupTitle: "Graphics",
+      rows: [
+        { label: "Graphics Processor (GPU)", value: specs.gpu },
+        { label: "Graphics Type", value: `${gpuType} Graphics` },
+        {
+          label: "External Display Support",
+          value: "Supports up to 3 external 4K@60Hz displays via Thunderbolt / HDMI 2.1",
+        },
+      ],
+    },
+    {
+      groupTitle: "Battery",
+      rows: [
+        { label: "Battery Capacity & Life", value: specs.battery },
+        {
+          label: "Power Adapter",
+          value:
+            specs.chargerWattage ??
+            (isGaming
+              ? "240W Slim Gallium-Nitride (GaN) AC Power Adapter"
+              : "65W / 100W USB Type-C Fast Charge Power Adapter"),
+        },
+        {
+          label: "Fast Charge Technology",
+          value: "0% to 50% charge in approximately 30 minutes",
+        },
+      ],
+    },
+    {
+      groupTitle: "Connectivity and Ports",
+      rows: [
+        {
+          label: "External I/O Ports",
+          value:
+            specs.ports ??
+            (isGaming
+              ? "2x Thunderbolt 4 / USB4 Type-C, 2x USB 3.2 Gen 1 Type-A, 1x HDMI 2.1, 1x RJ-45 Gigabit Ethernet, 1x 3.5mm Audio Combo"
+              : "2x Thunderbolt 4 (USB4 Type-C Power Delivery & DisplayPort 2.1), 1x USB 3.2 Type-A, 1x HDMI 2.1, 1x 3.5mm Headphone/Mic Combo"),
+        },
+        {
+          label: "Wireless & Bluetooth",
+          value:
+            specs.wireless ??
+            (isBusiness || isGaming
+              ? "Intel Wi-Fi 7 BE200 (2x2) + Bluetooth 5.4 Wireless Card"
+              : "Wi-Fi 6E (802.11ax 2x2) + Bluetooth 5.3"),
+        },
+        {
+          label: "Webcam & Microphones",
+          value:
+            specs.webcam ??
+            "1080p FHD IR Windows Hello Camera with Privacy Shutter & Dual-Array AI Noise-Canceling Mics",
+        },
+      ],
+    },
+    {
+      groupTitle: "Physical",
+      rows: [
+        { label: "Starting Weight", value: specs.weight },
+        {
+          label: "Chassis Material",
+          value:
+            specs.chassisMaterial ??
+            (isBusiness || isGaming
+              ? "CNC-Machined Recycled Aluminum & Magnesium Alloy"
+              : "Anodized Aluminum Top Cover & Precision Polycarbonate Deck"),
+        },
+        {
+          label: "Keyboard & Touchpad",
+          value:
+            specs.keyboard ??
+            (isGaming
+              ? "Per-Key / 4-Zone RGB Backlit Anti-Ghosting Keyboard + Precision Mylar Touchpad"
+              : "Spill-Resistant Multi-Level Backlit Keyboard + Precision Glass Touchpad"),
+        },
+        {
+          label: "Audio System",
+          value:
+            specs.audio ??
+            (brand === "HP"
+              ? "Poly Studio / Bang & Olufsen Quad Speakers with Discrete Smart Amp"
+              : "Dolby Atmos Spatial Audio Speakers with Waves MaxxAudio Pro"),
+        },
+      ],
+    },
+    {
+      groupTitle: "Software",
+      rows: [
+        { label: "Operating System", value: specs.os },
+        {
+          label: "Security Features",
+          value:
+            specs.security ??
+            (brand === "HP"
+              ? "TPM 2.0 Embedded Security Chip, Windows Hello IR / Fingerprint Reader, HP Wolf Security"
+              : "TPM 2.0 FIPS-140-2 Certified, Windows Hello Biometrics, Dell SafeBIOS"),
+        },
+        {
+          label: "Warranty Coverage",
+          value:
+            specs.warranty ??
+            "1-Year Official TK Laptop Hardware Warranty + Manufacturer Serial Coverage",
+        },
+      ],
+    },
+  ];
+}
+

@@ -176,7 +176,7 @@ export function SearchBar({ className, onNavigate }: SearchBarProps) {
                       aria-selected={isSelected}
                     >
                       <Link
-                        href={`/search?q=${encodeURIComponent(product.name)}`}
+                        href={`/laptops/${product.slug}`}
                         onClick={() => {
                           setIsOpen(false);
                           onNavigate?.();

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="bg-angle-ports" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-angle-ports)"/>
+  <!-- Side Profile Wedge -->
+  <path d="M120 320L640 160L652 172L160 335Z" fill="#1E293B"/>
+  <rect x="90" y="330" width="620" height="44" rx="14" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+  <!-- Thunderbolt 4 / USB-C / HDMI / Audio Ports -->
+  <rect x="145" y="346" width="38" height="12" rx="4" fill="#0B1220" stroke="#60A5FA" stroke-width="2"/>
+  <rect x="210" y="348" width="28" height="9" rx="4.5" fill="#0B1220" stroke="#38BDF8" stroke-width="2"/>
+  <rect x="260" y="348" width="28" height="9" rx="4.5" fill="#0B1220" stroke="#38BDF8" stroke-width="2"/>
+  <rect x="315" y="345" width="44" height="14" rx="3" fill="#0B1220" stroke="#94A3B8" stroke-width="2"/>
+  <circle cx="395" cy="352" r="6" fill="#0B1220" stroke="#94A3B8" stroke-width="2"/>
+  <!-- Vent Slots -->
+  <rect x="460" y="346" width="180" height="12" rx="4" fill="#0F172A"/>
+  <text x="400" y="450" text-anchor="middle" fill="#0B1220" font-family="system-ui, sans-serif" font-weight="700" font-size="18" letter-spacing="1.5">THUNDERBOLT 4 • HDMI 2.1 • HIGH-SPEED I/O PROFILE</text>
+</svg>

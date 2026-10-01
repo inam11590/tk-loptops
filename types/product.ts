@@ -16,10 +16,22 @@ export interface ProductSpecs {
   battery: string;
   os: string;
   weight: string;
+  // Extended specification fields for the 8-section SpecsTable
+  ports?: string;
+  wireless?: string;
+  webcam?: string;
+  audio?: string;
+  keyboard?: string;
+  dimensions?: string;
+  chassisMaterial?: string;
+  chargerWattage?: string;
+  security?: string;
+  warranty?: string;
 }
 
 export interface Product {
   id: string;
+  sku?: string;
   slug: string;
   name: string;
   brand: LaptopBrand;
@@ -33,4 +45,28 @@ export interface Product {
   specs: ProductSpecs;
   tags: string[];
   description: string;
+  highlights?: string[];
+}
+
+export interface Accessory {
+  id: string;
+  name: string;
+  category: "bag" | "mouse" | "cooling";
+  price: number;
+  oldPrice?: number;
+  image: string;
+  shortSpec: string;
+}
+
+export interface ProductReview {
+  id: string;
+  productSlug: string;
+  author: string;
+  avatar: string;
+  date: string;
+  isoDate: string;
+  verifiedPurchase: boolean;
+  rating: number;
+  title: string;
+  text: string;
 }

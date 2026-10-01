@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="bg-angle-display" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="50%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-angle-display)"/>
+  <rect x="110" y="85" width="580" height="390" rx="20" fill="#090D16" stroke="#60A5FA" stroke-opacity="0.5" stroke-width="3"/>
+  <rect x="128" y="103" width="544" height="354" rx="10" fill="#111C33"/>
+  <circle cx="400" cy="280" r="110" fill="#2563EB" fill-opacity="0.25" stroke="#38BDF8" stroke-width="2"/>
+  <text x="400" y="270" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="800" font-size="28" letter-spacing="1">100% DCI-P3</text>
+  <text x="400" y="305" text-anchor="middle" fill="#93C5FD" font-family="system-ui, sans-serif" font-weight="600" font-size="16" letter-spacing="2">ULTRA-NARROW BEZEL DISPLAY</text>
+  <text x="400" y="530" text-anchor="middle" fill="#CBD5E1" font-family="system-ui, sans-serif" font-weight="600" font-size="15" letter-spacing="1.5">LOW BLUE LIGHT • ANTI-REFLECTIVE COATING</text>
+</svg>

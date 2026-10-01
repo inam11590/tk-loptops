@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <rect width="400" height="300" rx="20" fill="#F1F5F9"/>
+  <rect x="95" y="75" width="210" height="155" rx="18" fill="#1E293B" stroke="#334155" stroke-width="4"/>
+  <path d="M155 75V58C155 46 165 38 178 38H222C235 38 245 46 245 58V75" stroke="#334155" stroke-width="8" stroke-linecap="round"/>
+  <rect x="120" y="115" width="160" height="85" rx="10" fill="#0F172A" stroke="#2563EB" stroke-opacity="0.5" stroke-width="2"/>
+  <text x="200" y="163" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="700" font-size="15" letter-spacing="1.5">TK PRO BAG</text>
+</svg>
