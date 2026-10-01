@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="bg-hp-gam" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="screen-hp-gam" x1="180" y1="120" x2="620" y2="410" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#090D16"/>
+      <stop offset="50%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-hp-gam)"/>
+  <ellipse cx="400" cy="468" rx="290" ry="24" fill="#2563EB" fill-opacity="0.22"/>
+  <rect x="165" y="110" width="470" height="305" rx="16" fill="#0B1220" stroke="#3B82F6" stroke-opacity="0.5" stroke-width="3"/>
+  <rect x="181" y="126" width="438" height="270" rx="6" fill="url(#screen-hp-gam)"/>
+  <polygon points="400,205 455,260 400,315 345,260" stroke="#60A5FA" stroke-width="3" fill="#2563EB" fill-opacity="0.25"/>
+  <text x="400" y="267" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="3">OMEN</text>
+  <path d="M105 415H695L728 446C728 454 718 460 705 460H95C82 460 72 454 72 446L105 415Z" fill="#1E293B"/>
+  <rect x="140" y="424" width="520" height="4" rx="2" fill="#3B82F6"/>
+  <rect x="340" y="415" width="120" height="6" rx="3" fill="#60A5FA"/>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="55%" stop-color="#111C33"/>
+      <stop offset="100%" stop-color="#0E192D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="80%" cy="25%" r="50%">
+      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect x="80" y="80" width="1040" height="470" rx="28" stroke="#2563EB" stroke-opacity="0.3" stroke-width="2" fill="#0B1220" fill-opacity="0.4"/>
+  <rect x="140" y="150" width="180" height="44" rx="22" fill="#2563EB" fill-opacity="0.2" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="230" y="178" text-anchor="middle" fill="#60A5FA" font-family="system-ui, sans-serif" font-size="16" font-weight="700" letter-spacing="1.5">AUTHORIZED RETAILER</text>
+  <text x="140" y="285" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="76" font-weight="800" letter-spacing="-1">TK Laptop</text>
+  <text x="140" y="355" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="32" font-weight="500">Premium HP &amp; Dell Workstations, Ultrabooks &amp; Gaming Laptops</text>
+  <text x="140" y="445" fill="#3B82F6" font-family="system-ui, sans-serif" font-size="24" font-weight="600">Free Express Delivery • 1-Year Official Warranty • Certified Hardware</text>
+</svg>

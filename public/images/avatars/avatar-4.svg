@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <rect width="120" height="120" rx="60" fill="#1E293B"/>
+  <circle cx="60" cy="46" r="22" fill="#60A5FA"/>
+  <path d="M24 104C24 84 40 74 60 74C80 74 96 84 96 104" fill="#3B82F6"/>
+  <text x="60" y="53" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="800" font-size="18">PN</text>
+</svg>

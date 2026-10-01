@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Explicit Brand Hex Tokens */
+    --color-brand-navy: #0b1220;
+    --color-brand-blue: #2563eb;
+    --color-brand-soft: #f5f7fa;
+
+    /* Semantic HSL Design Tokens (Light Mode) */
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 220 49% 8%; /* #0B1220 Deep Navy */
+    --surface: 216 33% 97%; /* #F5F7FA Soft Gray */
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 49% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 49% 8%;
+
+    /* Primary: Deep Navy (#0B1220) */
+    --primary: 220 49% 8%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Soft Gray (#F5F7FA) */
+    --secondary: 216 33% 97%;
+    --secondary-foreground: 220 49% 8%;
+
+    /* Accent: Electric Blue (#2563EB) */
+    --accent: 221 83% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 216 33% 97%;
+    --muted-foreground: 215 16% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    /* Radius Tokens */
+    --radius: 0.75rem; /* 12px - rounded-xl base */
+    --radius-2xl: 1rem; /* 16px */
+    --radius-xl: 0.75rem; /* 12px */
+    --radius-lg: 0.625rem; /* 10px */
+    --radius-md: 0.5rem; /* 8px */
+    --radius-sm: 0.375rem; /* 6px */
+
+    /* Spacing Tokens */
+    --space-section: 5rem; /* 80px */
+    --space-section-sm: 3rem; /* 48px */
+    --space-container: 1.5rem; /* 24px */
+    --space-card: 1.5rem; /* 24px */
+    --space-grid: 1.75rem; /* 28px */
+
+    /* Elevation & Shadow Tokens */
+    --shadow-soft: 0 4px 20px -2px rgba(11, 18, 32, 0.06);
+    --shadow-card: 0 2px 12px -2px rgba(11, 18, 32, 0.05), 0 1px 4px -1px rgba(11, 18, 32, 0.03);
+    --shadow-card-hover: 0 16px 32px -8px rgba(37, 99, 235, 0.12), 0 4px 12px -2px rgba(11, 18, 32, 0.06);
+
+    /* Gradient Tokens */
+    --gradient-hero: radial-gradient(
+        circle at 85% 15%,
+        rgba(37, 99, 235, 0.16) 0%,
+        rgba(37, 99, 235, 0.03) 45%,
+        transparent 75%
+      ),
+      linear-gradient(135deg, #0b1220 0%, #111c33 55%, #0e192d 100%);
+    --gradient-accent: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  }
+
+  .dark {
+    /* Semantic HSL Design Tokens (Dark Mode) */
+    --background: 220 49% 8%; /* #0B1220 Deep Navy */
+    --foreground: 216 33% 97%; /* #F5F7FA Soft Gray */
+    --surface: 220 42% 12%; /* Elevated Dark Navy */
+
+    --card: 220 42% 11%;
+    --card-foreground: 216 33% 97%;
+
+    --popover: 220 42% 11%;
+    --popover-foreground: 216 33% 97%;
+
+    --primary: 216 33% 97%;
+    --primary-foreground: 220 49% 8%;
+
+    --secondary: 220 35% 16%;
+    --secondary-foreground: 216 33% 97%;
+
+    --accent: 221 83% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 220 35% 16%;
+    --muted-foreground: 215 20% 68%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 32% 18%;
+    --input: 220 32% 18%;
+    --ring: 221 83% 53%;
+
+    --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+    --shadow-card: 0 2px 12px -2px rgba(0, 0, 0, 0.3);
+    --shadow-card-hover: 0 16px 32px -8px rgba(37, 99, 235, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased selection:bg-accent/20 selection:text-accent;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+/* Container query utility support for product cards */
+.product-card-container {
+  container-type: inline-size;
+}

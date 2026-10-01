@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="16" fill="#0B1220"/>
+  <rect x="4" y="4" width="56" height="56" rx="12" stroke="#2563EB" stroke-opacity="0.35" stroke-width="2"/>
+  <path d="M16 20C16 17.7909 17.7909 16 20 16H44C46.2091 16 48 17.7909 48 20V38H16V20Z" stroke="#2563EB" stroke-width="3" fill="#111C33"/>
+  <path d="M10 41H54L56 45C56 46.6569 54.6569 48 53 48H11C9.34315 48 8 46.6569 8 45L10 41Z" fill="#2563EB"/>
+  <text x="32" y="31" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="800" font-size="11" letter-spacing="0.5">TK</text>
+</svg>

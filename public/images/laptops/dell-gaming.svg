@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="bg-dell-gam" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+    <linearGradient id="screen-dell-gam" x1="180" y1="120" x2="620" y2="410" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="55%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-dell-gam)"/>
+  <ellipse cx="400" cy="468" rx="295" ry="24" fill="#38BDF8" fill-opacity="0.2"/>
+  <rect x="165" y="110" width="470" height="305" rx="14" fill="#090D16" stroke="#38BDF8" stroke-opacity="0.55" stroke-width="3"/>
+  <rect x="181" y="126" width="438" height="270" rx="6" fill="url(#screen-dell-gam)"/>
+  <circle cx="400" cy="260" r="50" stroke="#38BDF8" stroke-width="2.5" fill="#0284C7" fill-opacity="0.2"/>
+  <text x="400" y="268" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="2.5">ALIENWARE</text>
+  <path d="M100 415H700L730 446C730 454 720 460 706 460H94C80 460 70 454 70 446L100 415Z" fill="#1E293B"/>
+  <rect x="135" y="425" width="530" height="4" rx="2" fill="#38BDF8"/>
+  <rect x="340" y="415" width="120" height="6" rx="3" fill="#38BDF8"/>
+</svg>

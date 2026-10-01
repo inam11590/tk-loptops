@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="bg-hp-biz" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <linearGradient id="screen-hp-biz" x1="180" y1="120" x2="620" y2="410" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="55%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-hp-biz)"/>
+  <ellipse cx="400" cy="465" rx="280" ry="22" fill="#0B1220" fill-opacity="0.12"/>
+  <rect x="170" y="115" width="460" height="300" rx="18" fill="#1E293B" stroke="#475569" stroke-width="4"/>
+  <rect x="186" y="131" width="428" height="266" rx="8" fill="url(#screen-hp-biz)"/>
+  <circle cx="400" cy="123" r="3" fill="#64748B"/>
+  <path d="M340 220 C380 180, 440 190, 470 250 C490 290, 430 330, 370 300 Z" fill="#60A5FA" fill-opacity="0.25"/>
+  <circle cx="400" cy="264" r="46" stroke="#FFFFFF" stroke-opacity="0.85" stroke-width="2.5" fill="#FFFFFF" fill-opacity="0.06"/>
+  <text x="400" y="273" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="700" font-size="26" letter-spacing="1">HP</text>
+  <path d="M110 415H690L720 442C720 450 712 456 700 456H100C88 456 80 450 80 442L110 415Z" fill="#CBD5E1"/>
+  <path d="M110 415H690L696 423H104L110 415Z" fill="#94A3B8"/>
+  <rect x="345" y="415" width="110" height="7" rx="3.5" fill="#64748B"/>
+</svg>
