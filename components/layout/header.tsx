@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, ShoppingCart, User } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ArrowLeft, Heart, Lock, ShoppingCart } from "lucide-react";
 import { SITE_CONFIG } from "@/lib/config";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { cn } from "@/lib/utils";
+import { UserMenu } from "@/components/account/UserMenu";
 import { Container } from "@/components/common/container";
 import { Logo } from "@/components/common/logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
@@ -19,8 +21,10 @@ import { SearchBar } from "@/components/layout/search-bar";
  * Sticky global header with TK Laptop logo, live debounced SearchBar,
  * desktop navigation links, theme toggle, wishlist link with animated badge,
  * and shopping cart trigger with animated item count badge.
+ * On `/checkout`, renders a minimal distraction header (Logo, Secure Checkout badge, Back to Cart).
  */
 export function Header() {
+  const pathname = usePathname();
   const hydrated = useHydrated();
 
   const cartItems = useCartStore((state) => state.items);
@@ -49,8 +53,44 @@ export function Header() {
     return () => clearTimeout(t);
   }, [wishlistCount, hydrated]);
 
+  // Minimal distraction header for /checkout
+  if (pathname?.startsWith("/checkout")) {
+    return (
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur-md print:hidden">
+        <Container className="flex h-20 items-center justify-between gap-4">
+          <Logo />
+
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+            <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>256-Bit SSL Secure Checkout</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="rounded-xl text-xs font-semibold"
+            >
+              <Link href="/cart">
+                <ArrowLeft className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                <span>Back to Cart</span>
+                {cartCount > 0 && (
+                  <span className="ml-1 text-muted-foreground">
+                    ({cartCount})
+                  </span>
+                )}
+              </Link>
+            </Button>
+          </div>
+        </Container>
+      </header>
+    );
+  }
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md transition-colors print:hidden">
       <Container className="flex h-20 items-center justify-between gap-4">
         {/* Left: Mobile Drawer Trigger + Brand Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
@@ -136,16 +176,8 @@ export function Header() {
             </span>
           </Button>
 
-          {/* Account Icon Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="User account"
-            title="Account"
-            className="hidden sm:inline-flex"
-          >
-            <User className="h-5 w-5" aria-hidden="true" />
-          </Button>
+          {/* Account Dropdown / Login Button */}
+          <UserMenu />
         </div>
       </Container>
     </header>

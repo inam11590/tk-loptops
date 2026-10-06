@@ -32,7 +32,7 @@ export function Footer() {
     <footer
       id="contact"
       aria-labelledby="footer-heading"
-      className="border-t border-white/10 bg-brand-navy text-slate-300"
+      className="border-t border-white/10 bg-brand-navy text-slate-300 print:hidden"
     >
       <h2 id="footer-heading" className="sr-only">
         Footer

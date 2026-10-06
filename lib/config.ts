@@ -1,7 +1,30 @@
 /**
- * Centralized application, currency, shipping & tax configuration for TK Laptop.
- * Change `currency`, `shipping`, or `tax` here to update calculations across the entire store.
+ * Centralized application, currency, shipping, tax, delivery & payment configuration for TK Laptop.
+ * Change `currency`, `shipping`, `deliveryMethods`, or `paymentMethodsConfig` here to update
+ * calculations and options across the entire store.
  */
+
+export type DeliveryMethodId = "standard" | "express" | "pickup";
+export type PaymentMethodId = "cod" | "card" | "bank_transfer" | "mobile_wallet";
+
+export interface DeliveryMethodConfig {
+  id: DeliveryMethodId;
+  label: string;
+  tagline: string;
+  description: string;
+  minDays: number;
+  maxDays: number;
+  fee: number;
+  freeOverThreshold: boolean;
+}
+
+export interface PaymentMethodConfig {
+  id: PaymentMethodId;
+  label: string;
+  tagline: string;
+  description: string;
+  codFee: number;
+}
 
 export const SITE_CONFIG = {
   name: "TK Laptop",
@@ -25,8 +48,107 @@ export const SITE_CONFIG = {
   shipping: {
     freeDeliveryThreshold: 999,
     flatShippingFee: 29,
+    expressShippingFee: 49,
+    codHandlingFee: 15,
     taxRate: 0.08, // 8% estimated sales tax
     warrantyText: "1-Year Official Warranty",
+  },
+  checkout: {
+    defaultCountry: "United States",
+    countries: [
+      "United States",
+      "Canada",
+      "United Kingdom",
+      "United Arab Emirates",
+      "Pakistan",
+      "Australia",
+      "Germany",
+    ],
+    deliveryMethods: [
+      {
+        id: "standard",
+        label: "Standard Insured Delivery",
+        tagline: "3–5 Business Days",
+        description:
+          "Tracked ground courier with full transit insurance and signature upon arrival. Free on orders over $999.",
+        minDays: 3,
+        maxDays: 5,
+        fee: 29,
+        freeOverThreshold: true,
+      },
+      {
+        id: "express",
+        label: "Express Air Delivery",
+        tagline: "1–2 Business Days",
+        description:
+          "Priority next-flight air courier with dedicated handling and real-time SMS notifications.",
+        minDays: 1,
+        maxDays: 2,
+        fee: 49,
+        freeOverThreshold: false,
+      },
+      {
+        id: "pickup",
+        label: "Flagship Store Pickup",
+        tagline: "Ready in 2 Hours",
+        description:
+          "Collect your laptop directly from our San Francisco showroom (742 Tech Plaza, Suite 400). Bring a valid photo ID.",
+        minDays: 0,
+        maxDays: 1,
+        fee: 0,
+        freeOverThreshold: false,
+      },
+    ] satisfies DeliveryMethodConfig[],
+    paymentMethods: [
+      {
+        id: "card",
+        label: "Credit or Debit Card",
+        tagline: "Visa, Mastercard, Amex, Discover",
+        description:
+          "Instant payment authorization with 256-bit SSL encryption and zero surcharge.",
+        codFee: 0,
+      },
+      {
+        id: "cod",
+        label: "Cash on Delivery (COD)",
+        tagline: "Pay Upon Courier Arrival",
+        description:
+          "Inspect your factory-sealed laptop package upon delivery before paying the courier.",
+        codFee: 15,
+      },
+      {
+        id: "bank_transfer",
+        label: "Direct Bank Transfer",
+        tagline: "Corporate ACH / Wire Transfer",
+        description:
+          "Transfer funds directly to our corporate bank account. Ideal for business & high-value orders.",
+        codFee: 0,
+      },
+      {
+        id: "mobile_wallet",
+        label: "Mobile Wallet (EasyPay / Instant Pay)",
+        tagline: "Instant Mobile Wallet Authorization",
+        description:
+          "Authorize payment directly from your registered mobile wallet account number.",
+        codFee: 0,
+      },
+    ] satisfies PaymentMethodConfig[],
+    bankDetails: {
+      bankName: "First Tech Commercial Bank",
+      accountTitle: "TK Laptop Enterprise LLC",
+      accountNumber: "4092-8810-3349-0012",
+      routingNumber: "121000358",
+      iban: "US64FTCB12100035840928810",
+      swiftCode: "FTCBUS6S",
+      instructions:
+        "Include your Order ID in the transfer memo/reference. Your laptop reservation is held for 48 hours while the transfer clears.",
+    },
+    mobileWalletDetails: {
+      providerName: "TK Instant Wallet (EasyPay / FastPay)",
+      merchantCode: "TK-MERCHANT-8899",
+      instructions:
+        "Enter the mobile number linked to your wallet. Once your order is placed, approve the payment request in your wallet app.",
+    },
   },
   navLinks: [
     { label: "Home", href: "/" },
@@ -34,7 +156,7 @@ export const SITE_CONFIG = {
     { label: "HP", href: "/laptops/hp" },
     { label: "Dell", href: "/laptops/dell" },
     { label: "Deals", href: "/deals" },
-    { label: "Contact", href: "#contact" },
+    { label: "Track Order", href: "/orders/track" },
   ],
   footerLinks: {
     shop: [
@@ -50,7 +172,7 @@ export const SITE_CONFIG = {
       { label: "Returns & Exchanges", href: "/#faq" },
       { label: "1-Year Warranty Policy", href: "/#faq" },
       { label: "Frequently Asked Questions", href: "/#faq" },
-      { label: "Track Your Order", href: "#contact" },
+      { label: "Track Your Order", href: "/orders/track" },
     ],
   },
   paymentMethods: [

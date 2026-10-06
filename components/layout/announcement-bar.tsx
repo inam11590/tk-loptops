@@ -10,7 +10,7 @@ export function AnnouncementBar() {
     <div
       role="region"
       aria-label="Store announcements"
-      className="border-b border-white/10 bg-brand-navy py-2 text-xs text-slate-200"
+      className="border-b border-white/10 bg-brand-navy py-2 text-xs text-slate-200 print:hidden"
     >
       <Container className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">

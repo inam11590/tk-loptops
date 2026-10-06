@@ -1,7 +1,16 @@
 import { ACCESSORIES } from "@/data/accessories";
 import { COUPONS, type Coupon } from "@/data/coupons";
 import { PRODUCTS } from "@/data/products";
-import { formatPrice, SITE_CONFIG } from "@/lib/config";
+import {
+  calculateDeliveryFee,
+  calculatePaymentFee,
+} from "@/lib/checkout";
+import {
+  formatPrice,
+  SITE_CONFIG,
+  type DeliveryMethodId,
+  type PaymentMethodId,
+} from "@/lib/config";
 import type { Product } from "@/types/product";
 
 export interface CartItemData {
@@ -46,6 +55,12 @@ export interface CouponValidationResult {
   message: string;
 }
 
+export interface CartCalculationOptions {
+  deliveryMethodId?: DeliveryMethodId;
+  paymentMethodId?: PaymentMethodId;
+  now?: Date;
+}
+
 export interface CartTotals {
   reconciledItems: ReconciledCartItem[];
   totalItems: number;
@@ -55,7 +70,10 @@ export interface CartTotals {
   couponDiscount: number;
   couponValidation: CouponValidationResult | null;
   totalSavings: number;
+  deliveryMethodId: DeliveryMethodId;
+  paymentMethodId: PaymentMethodId;
   shipping: number;
+  codFee: number;
   freeShippingThreshold: number;
   freeShippingRemaining: number;
   freeShippingProgress: number;
@@ -262,16 +280,19 @@ export function validateCoupon(
 }
 
 /**
- * Pure function to calculate shipping cost based on subtotal and SITE_CONFIG rules.
+ * Pure function to calculate shipping cost based on subtotal, delivery method, and SITE_CONFIG rules.
  */
-export function calculateShipping(subtotal: number): {
+export function calculateShipping(
+  subtotal: number,
+  deliveryMethodId: DeliveryMethodId = "standard"
+): {
   shipping: number;
   freeShippingThreshold: number;
   freeShippingRemaining: number;
   freeShippingProgress: number;
   qualifiesForFreeShipping: boolean;
 } {
-  const { freeDeliveryThreshold, flatShippingFee } = SITE_CONFIG.shipping;
+  const { freeDeliveryThreshold } = SITE_CONFIG.shipping;
 
   if (subtotal <= 0) {
     return {
@@ -284,7 +305,7 @@ export function calculateShipping(subtotal: number): {
   }
 
   const qualifiesForFreeShipping = subtotal >= freeDeliveryThreshold;
-  const shipping = qualifiesForFreeShipping ? 0 : flatShippingFee;
+  const shipping = calculateDeliveryFee(deliveryMethodId, subtotal);
   const freeShippingRemaining = Math.max(0, freeDeliveryThreshold - subtotal);
   const freeShippingProgress = Math.min(
     100,
@@ -301,13 +322,20 @@ export function calculateShipping(subtotal: number): {
 }
 
 /**
- * Pure function to calculate full cart totals, savings, shipping, tax, and coupon status.
+ * Pure function to calculate full cart totals, savings, delivery fee, COD fee, tax, and coupon status.
  */
 export function calculateCartTotals(
   items: CartItemData[],
   appliedCouponCode: string | null = null,
-  now: Date = new Date()
+  optionsOrNow: Date | CartCalculationOptions = {}
 ): CartTotals {
+  const options: CartCalculationOptions =
+    optionsOrNow instanceof Date ? { now: optionsOrNow } : optionsOrNow;
+
+  const now = options.now ?? new Date();
+  const deliveryMethodId = options.deliveryMethodId ?? "standard";
+  const paymentMethodId = options.paymentMethodId ?? "card";
+
   const reconciledItems = reconcileCartItems(items);
 
   const totalItems = reconciledItems.reduce(
@@ -350,14 +378,17 @@ export function calculateCartTotals(
     freeShippingRemaining,
     freeShippingProgress,
     qualifiesForFreeShipping,
-  } = calculateShipping(subtotal);
+  } = calculateShipping(subtotal, deliveryMethodId);
+
+  const codFee = calculatePaymentFee(paymentMethodId, subtotal);
 
   const taxableAmount = Math.max(0, subtotal - couponDiscount);
   const taxRate = SITE_CONFIG.shipping.taxRate;
   const tax = Math.round(taxableAmount * taxRate);
   const taxRatePercent = Math.round(taxRate * 100);
 
-  const grandTotal = Math.max(0, taxableAmount + shipping + tax);
+  const grandTotal =
+    subtotal > 0 ? Math.max(0, taxableAmount + shipping + codFee + tax) : 0;
   const totalSavings = productSavings + couponDiscount;
 
   const hasStockIssues = reconciledItems.some((item) =>
@@ -374,7 +405,10 @@ export function calculateCartTotals(
     couponDiscount,
     couponValidation,
     totalSavings,
+    deliveryMethodId,
+    paymentMethodId,
     shipping,
+    codFee,
     freeShippingThreshold,
     freeShippingRemaining,
     freeShippingProgress,

@@ -126,11 +126,11 @@ export function MobileNav() {
               </SheetClose>
               <SheetClose asChild>
                 <Link
-                  href="/cart"
+                  href="/account"
                   className="flex flex-col items-center gap-1.5 rounded-xl border border-border/70 bg-surface p-3 text-xs font-medium text-foreground transition-colors hover:border-accent/40 hover:text-accent"
                 >
-                  <User className="h-4 w-4" aria-hidden="true" />
-                  <span>Orders</span>
+                  <User className="h-4 w-4 text-accent" aria-hidden="true" />
+                  <span>Account</span>
                 </Link>
               </SheetClose>
             </div>
