@@ -11,6 +11,9 @@ import {
   User,
 } from "lucide-react";
 import { SITE_CONFIG } from "@/lib/config";
+import { useHydrated } from "@/hooks/use-hydrated";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import { Logo } from "@/components/common/logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +29,18 @@ import { SearchBar } from "@/components/layout/search-bar";
 
 /**
  * Responsive mobile navigation drawer (hamburger menu) with live debounced search,
- * main category navigation links, and account/wishlist quick links.
+ * main category navigation links, and account/wishlist/cart quick links.
  */
 export function MobileNav() {
   const [open, setOpen] = React.useState(false);
+  const hydrated = useHydrated();
+  const cartItems = useCartStore((state) => state.items);
+  const wishlistIds = useWishlistStore((state) => state.items);
+
+  const cartCount = hydrated
+    ? cartItems.reduce((sum, item) => sum + item.quantity, 0)
+    : 0;
+  const wishlistCount = hydrated ? wishlistIds.length : 0;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -86,37 +97,40 @@ export function MobileNav() {
             </ul>
           </nav>
 
-          {/* Quick Account & Wishlist Actions */}
+          {/* Quick Account, Wishlist & Cart Actions */}
           <div className="space-y-2 border-t border-border pt-4">
             <p className="px-3.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              My Account
+              My Store
             </p>
             <div className="grid grid-cols-3 gap-2">
               <SheetClose asChild>
                 <Link
-                  href="#wishlist"
+                  href="/wishlist"
                   className="flex flex-col items-center gap-1.5 rounded-xl border border-border/70 bg-surface p-3 text-xs font-medium text-foreground transition-colors hover:border-accent/40 hover:text-accent"
                 >
-                  <Heart className="h-4 w-4" aria-hidden="true" />
-                  <span>Wishlist</span>
+                  <Heart className="h-4 w-4 text-rose-500" aria-hidden="true" />
+                  <span>Wishlist ({wishlistCount})</span>
                 </Link>
               </SheetClose>
               <SheetClose asChild>
                 <Link
-                  href="#cart"
+                  href="/cart"
                   className="flex flex-col items-center gap-1.5 rounded-xl border border-border/70 bg-surface p-3 text-xs font-medium text-foreground transition-colors hover:border-accent/40 hover:text-accent"
                 >
-                  <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-                  <span>Cart (0)</span>
+                  <ShoppingBag
+                    className="h-4 w-4 text-accent"
+                    aria-hidden="true"
+                  />
+                  <span>Cart ({cartCount})</span>
                 </Link>
               </SheetClose>
               <SheetClose asChild>
                 <Link
-                  href="#account"
+                  href="/cart"
                   className="flex flex-col items-center gap-1.5 rounded-xl border border-border/70 bg-surface p-3 text-xs font-medium text-foreground transition-colors hover:border-accent/40 hover:text-accent"
                 >
                   <User className="h-4 w-4" aria-hidden="true" />
-                  <span>Account</span>
+                  <span>Orders</span>
                 </Link>
               </SheetClose>
             </div>

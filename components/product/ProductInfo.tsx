@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Banknote,
@@ -21,12 +22,16 @@ import {
   Zap,
 } from "lucide-react";
 import { Product } from "@/types";
+import { useHydrated } from "@/hooks/use-hydrated";
+import { productToCartItem } from "@/lib/cart";
 import {
   calculateDiscountPercentage,
   formatPrice,
   SITE_CONFIG,
 } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QuantitySelector } from "@/components/product/QuantitySelector";
@@ -41,15 +46,28 @@ interface ProductInfoProps {
  * - Price, old price, discount % badge, and "You save X"
  * - Stock status (In Stock, Low Stock, Out of Stock) with aria-live
  * - Short highlights list
- * - QuantitySelector (1..stock) + Add to Cart, Buy Now, Wishlist heart toggle
- * - Delivery info box (estimated delivery date, free shipping & Cash on Delivery note)
- * - Trust badges & Share buttons (Copy link, WhatsApp, Facebook)
+ * - QuantitySelector (1..stock) + Add to Cart, Buy Now (redirects to /checkout), Wishlist toggle
+ * - Delivery info box, Trust badges & Share buttons
  */
 export function ProductInfo({ product }: ProductInfoProps) {
+  const router = useRouter();
+  const hydrated = useHydrated();
+
   const [quantity, setQuantity] = useState(1);
-  const [wishlisted, setWishlisted] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const addItem = useCartStore((state) => state.addItem);
+  const showToast = useCartStore((state) => state.showToast);
+  const cartQty = useCartStore((state) =>
+    hydrated
+      ? state.items.find((i) => i.productId === product.id)?.quantity ?? 0
+      : 0
+  );
+
+  const toggleWishlist = useWishlistStore((state) => state.toggleItem);
+  const wishlisted = useWishlistStore((state) =>
+    hydrated ? state.items.includes(product.id) : false
+  );
 
   const sku = product.sku ?? `TK-${product.id.toUpperCase()}`;
   const discountPercent = calculateDiscountPercentage(
@@ -64,27 +82,23 @@ export function ProductInfo({ product }: ProductInfoProps) {
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 10;
 
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg);
-    window.setTimeout(() => {
-      setToastMessage((current) => (current === msg ? null : current));
-    }, 3500);
-  };
-
   const handleAddToCart = () => {
-    // TODO: Wire up Zustand cart store in Step 5
-    triggerToast("Cart coming in the next step");
+    if (isOutOfStock) return;
+    addItem(productToCartItem(product, quantity), quantity, {
+      openMiniCart: true,
+    });
   };
 
   const handleBuyNow = () => {
-    // TODO: Wire up Zustand cart store & checkout redirect in Step 5
-    triggerToast("Cart coming in the next step");
+    if (isOutOfStock) return;
+    addItem(productToCartItem(product, quantity), quantity, {
+      openMiniCart: false,
+    });
+    router.push("/checkout");
   };
 
   const handleWishlistToggle = () => {
-    // TODO: Wire up Zustand wishlist store in Step 5
-    setWishlisted((prev) => !prev);
-    triggerToast("Cart coming in the next step");
+    toggleWishlist(product.id, product.name);
   };
 
   const handleCopyLink = async () => {
@@ -95,9 +109,10 @@ export function ProductInfo({ product }: ProductInfoProps) {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      showToast("Product link copied to clipboard.", "info");
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      triggerToast("Link ready to share");
+      showToast("Link ready to share.", "info");
     }
   };
 
@@ -105,7 +120,9 @@ export function ProductInfo({ product }: ProductInfoProps) {
     `${SITE_CONFIG.url}/laptops/${product.slug}`
   );
   const shareTextEncoded = encodeURIComponent(
-    `Check out the ${product.name} (${formatPrice(product.price)}) at ${SITE_CONFIG.name}`
+    `Check out the ${product.name} (${formatPrice(product.price)}) at ${
+      SITE_CONFIG.name
+    }`
   );
 
   return (
@@ -119,6 +136,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
           <Badge variant="secondary" className="capitalize">
             {product.category} Series
           </Badge>
+          {cartQty > 0 && (
+            <Badge
+              variant="outline"
+              className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+            >
+              <Check className="mr-1 h-3 w-3" />
+              In Cart ({cartQty})
+            </Badge>
+          )}
         </div>
         <span className="font-mono text-xs font-medium text-muted-foreground">
           SKU: <strong className="text-foreground">{sku}</strong>
@@ -169,8 +195,8 @@ export function ProductInfo({ product }: ProductInfoProps) {
                 isOutOfStock
                   ? "bg-rose-500"
                   : isLowStock
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
+                  ? "bg-amber-500"
+                  : "bg-emerald-500"
               )}
               aria-hidden="true"
             />
@@ -180,15 +206,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
                 isOutOfStock
                   ? "text-rose-600 dark:text-rose-400"
                   : isLowStock
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-emerald-600 dark:text-emerald-400"
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-emerald-600 dark:text-emerald-400"
               )}
             >
               {isOutOfStock
                 ? "Out of Stock"
                 : isLowStock
-                  ? `Low Stock (Only ${product.stock} left)`
-                  : `In Stock (${product.stock} available)`}
+                ? `Low Stock (Only ${product.stock} left)`
+                : `In Stock (${product.stock} available)`}
             </span>
           </div>
         </div>
@@ -275,7 +301,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
             <QuantitySelector
               quantity={quantity}
               maxStock={product.stock}
-              onChange={setQuantity}
+              onChange={(next) => {
+                if (next > product.stock) {
+                  showToast(
+                    `Maximum available stock is ${product.stock}.`,
+                    "warning"
+                  );
+                }
+                setQuantity(next);
+              }}
               disabled={isOutOfStock}
             />
           </div>
@@ -332,25 +366,6 @@ export function ProductInfo({ product }: ProductInfoProps) {
               />
             </Button>
           </div>
-        </div>
-
-        {/* Accessible Toast Notification Banner */}
-        <div aria-live="polite" aria-atomic="true">
-          {toastMessage && (
-            <div
-              role="status"
-              className="mt-2 flex items-center justify-between rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-xs font-semibold text-accent"
-            >
-              <span>{toastMessage}</span>
-              <button
-                type="button"
-                onClick={() => setToastMessage(null)}
-                className="text-xs underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
         </div>
       </div>
 

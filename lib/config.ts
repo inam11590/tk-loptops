@@ -1,7 +1,6 @@
 /**
- * Centralized application & currency configuration for TK Laptop.
- * Change `currency.code`, `currency.symbol`, or `currency.locale` here
- * to update pricing display across the entire store.
+ * Centralized application, currency, shipping & tax configuration for TK Laptop.
+ * Change `currency`, `shipping`, or `tax` here to update calculations across the entire store.
  */
 
 export const SITE_CONFIG = {
@@ -25,6 +24,8 @@ export const SITE_CONFIG = {
   },
   shipping: {
     freeDeliveryThreshold: 999,
+    flatShippingFee: 29,
+    taxRate: 0.08, // 8% estimated sales tax
     warrantyText: "1-Year Official Warranty",
   },
   navLinks: [
@@ -52,7 +53,13 @@ export const SITE_CONFIG = {
       { label: "Track Your Order", href: "#contact" },
     ],
   },
-  paymentMethods: ["Visa", "Mastercard", "American Express", "Apple Pay", "PayPal"],
+  paymentMethods: [
+    "Visa",
+    "Mastercard",
+    "American Express",
+    "Apple Pay",
+    "PayPal",
+  ],
 } as const;
 
 /**
@@ -73,7 +80,10 @@ export function formatPrice(amount: number): string {
 /**
  * Calculates the integer discount percentage between oldPrice and current price.
  */
-export function calculateDiscountPercentage(price: number, oldPrice?: number): number | null {
+export function calculateDiscountPercentage(
+  price: number,
+  oldPrice?: number
+): number | null {
   if (!oldPrice || oldPrice <= price) return null;
   return Math.round(((oldPrice - price) / oldPrice) * 100);
 }

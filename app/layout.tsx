@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/common/theme-provider";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { MiniCart } from "@/components/cart/MiniCart";
 import "./globals.css";
 
 const inter = Inter({
@@ -112,6 +113,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <MiniCart />
         </ThemeProvider>
       </body>
     </html>

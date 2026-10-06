@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { Check, ShoppingBag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useHydrated } from "@/hooks/use-hydrated";
+import { productToCartItem } from "@/lib/cart";
 import { formatPrice } from "@/lib/config";
+import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types/product";
 
 interface StickyCartBarProps {
@@ -13,7 +16,14 @@ interface StickyCartBarProps {
 
 export function StickyCartBar({ product }: StickyCartBarProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const hydrated = useHydrated();
+
+  const addItem = useCartStore((state) => state.addItem);
+  const cartQty = useCartStore((state) =>
+    hydrated
+      ? state.items.find((i) => i.productId === product.id)?.quantity ?? 0
+      : 0
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,26 +43,14 @@ export function StickyCartBar({ product }: StickyCartBarProps) {
   }, []);
 
   const handleAddToCart = () => {
-    // TODO: Wire mobile sticky Add to Cart button to Zustand cart store in Step 5
-    setToastMessage("Cart coming in the next step");
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
+    if (product.stock <= 0) return;
+    addItem(productToCartItem(product, 1), 1, { openMiniCart: true });
   };
 
   if (!isVisible) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 p-3 shadow-2xl backdrop-blur-md md:hidden">
-      {toastMessage && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mb-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-center text-xs font-semibold text-primary"
-        >
-          {toastMessage}
-        </div>
-      )}
       <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-xs font-medium text-muted-foreground">
@@ -72,13 +70,31 @@ export function StickyCartBar({ product }: StickyCartBarProps) {
 
         <Button
           type="button"
+          variant={
+            product.stock === 0
+              ? "secondary"
+              : cartQty > 0
+              ? "default"
+              : "accent"
+          }
           size="default"
           disabled={product.stock === 0}
           onClick={handleAddToCart}
-          className="shrink-0 font-semibold shadow-glow"
+          className="shrink-0 font-semibold shadow-sm"
         >
-          <ShoppingBag className="mr-1.5 h-4 w-4" />
-          {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+          {product.stock === 0 ? (
+            <span>Out of Stock</span>
+          ) : cartQty > 0 ? (
+            <>
+              <Check className="mr-1.5 h-4 w-4" />
+              <span>In Cart ({cartQty})</span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag className="mr-1.5 h-4 w-4" />
+              <span>Add to Cart</span>
+            </>
+          )}
         </Button>
       </div>
     </div>

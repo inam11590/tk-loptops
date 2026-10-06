@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/common/section-heading";
 import { ACCESSORIES } from "@/data/accessories";
+import { productToCartItem } from "@/lib/cart";
 import { formatPrice } from "@/lib/config";
+import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types/product";
 
 interface FrequentlyBoughtTogetherProps {
@@ -21,7 +23,10 @@ export function FrequentlyBoughtTogether({
   const [selectedIds, setSelectedIds] = useState<string[]>(
     ACCESSORIES.map((acc) => acc.id)
   );
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const addItem = useCartStore((state) => state.addItem);
+  const showToast = useCartStore((state) => state.showToast);
+  const setMiniCartOpen = useCartStore((state) => state.setMiniCartOpen);
 
   const toggleAccessory = (id: string) => {
     setSelectedIds((prev) =>
@@ -47,11 +52,43 @@ export function FrequentlyBoughtTogether({
   const totalSavings = Math.max(0, bundleOldTotal - bundleTotal);
 
   const handleAddBundle = () => {
-    // TODO: Wire Add Bundle to Cart to Zustand cart state in Step 5
-    setToastMessage("Cart coming in the next step");
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3200);
+    if (product.stock <= 0) return;
+
+    // 1. Add the main laptop silently
+    const laptopResult = addItem(productToCartItem(product, 1), 1, {
+      openMiniCart: false,
+      silent: true,
+    });
+
+    // 2. Add each checked accessory silently
+    let addedCount = laptopResult.added ? 1 : 0;
+    for (const acc of selectedAccessories) {
+      const accRes = addItem(
+        {
+          productId: acc.id,
+          slug: acc.id,
+          name: acc.name,
+          brand: "TK Accessory",
+          image: acc.image,
+          price: acc.price,
+          oldPrice: acc.oldPrice,
+          stock: 25,
+          specsSummary: acc.shortSpec,
+          itemType: "accessory",
+        },
+        1,
+        { openMiniCart: false, silent: true }
+      );
+      if (accRes.added) addedCount += 1;
+    }
+
+    setMiniCartOpen(true);
+    showToast(
+      `Added bundle (${addedCount} ${
+        addedCount === 1 ? "item" : "items"
+      }) to your cart.`,
+      "success"
+    );
   };
 
   return (
@@ -250,6 +287,7 @@ export function FrequentlyBoughtTogether({
 
             <Button
               type="button"
+              variant="accent"
               size="lg"
               disabled={product.stock === 0}
               onClick={handleAddBundle}
@@ -260,16 +298,6 @@ export function FrequentlyBoughtTogether({
                 ? "Laptop Out of Stock"
                 : `Add Bundle to Cart (${1 + selectedAccessories.length} Items)`}
             </Button>
-
-            {toastMessage && (
-              <div
-                role="status"
-                aria-live="polite"
-                className="mt-3 rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2.5 text-center text-xs font-semibold text-primary"
-              >
-                {toastMessage}
-              </div>
-            )}
           </div>
         </div>
       </div>

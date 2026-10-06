@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
   BatteryCharging,
+  Check,
   Cpu,
   HardDrive,
   Heart,
@@ -11,9 +14,13 @@ import {
   Star,
 } from "lucide-react";
 import { Product } from "@/types";
+import { useHydrated } from "@/hooks/use-hydrated";
+import { productToCartItem } from "@/lib/cart";
 import { calculateDiscountPercentage, formatPrice } from "@/lib/config";
 import { ViewMode } from "@/lib/products";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -24,16 +31,39 @@ interface ProductCardProps {
 
 /**
  * Reusable ProductCard supporting both vertical "grid" and horizontal "list" variants.
- * Displays laptop image, brand & discount badges, rating, title, key hardware specs,
- * formatted pricing via formatPrice(), and wishlist / add-to-cart action buttons.
+ * Wired to useCartStore and useWishlistStore with live "In Cart" state, wishlist toggle,
+ * and automatic MiniCart drawer opening.
  */
 export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
+  const hydrated = useHydrated();
+
+  const addItem = useCartStore((state) => state.addItem);
+  const cartQty = useCartStore((state) =>
+    hydrated
+      ? state.items.find((i) => i.productId === product.id)?.quantity ?? 0
+      : 0
+  );
+
+  const toggleWishlist = useWishlistStore((state) => state.toggleItem);
+  const isWishlisted = useWishlistStore((state) =>
+    hydrated ? state.items.includes(product.id) : false
+  );
+
   const discountPercent = calculateDiscountPercentage(
     product.price,
     product.oldPrice
   );
   const primaryImage = product.images[0] ?? "/images/laptops/hp-business.svg";
   const isOutOfStock = product.stock <= 0;
+
+  const handleAddToCart = () => {
+    if (isOutOfStock) return;
+    addItem(productToCartItem(product, 1), 1);
+  };
+
+  const handleToggleWishlist = () => {
+    toggleWishlist(product.id, product.name);
+  };
 
   if (variant === "list") {
     return (
@@ -54,10 +84,23 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
               type="button"
               variant="outline"
               size="icon"
-              aria-label={`Add ${product.name} to wishlist`}
-              className="h-9 w-9 rounded-full border-border/60 bg-background/85 text-muted-foreground backdrop-blur-sm transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500"
+              onClick={handleToggleWishlist}
+              aria-pressed={isWishlisted}
+              aria-label={
+                isWishlisted
+                  ? `Remove ${product.name} from wishlist`
+                  : `Add ${product.name} to wishlist`
+              }
+              className={cn(
+                "h-9 w-9 rounded-full border-border/60 bg-background/85 text-muted-foreground backdrop-blur-sm transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500",
+                isWishlisted &&
+                  "border-rose-500/40 bg-rose-500/15 text-rose-500"
+              )}
             >
-              <Heart className="h-4 w-4" aria-hidden="true" />
+              <Heart
+                className={cn("h-4 w-4", isWishlisted && "fill-rose-500")}
+                aria-hidden="true"
+              />
             </Button>
           </div>
 
@@ -111,8 +154,8 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
                 {isOutOfStock
                   ? "Out of Stock"
                   : product.stock > 10
-                    ? "In Stock"
-                    : `Only ${product.stock} left`}
+                  ? "In Stock"
+                  : `Only ${product.stock} left`}
               </span>
             </div>
 
@@ -196,17 +239,40 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
 
             <Button
               type="button"
-              variant={isOutOfStock ? "secondary" : "accent"}
+              variant={
+                isOutOfStock
+                  ? "secondary"
+                  : cartQty > 0
+                  ? "default"
+                  : "accent"
+              }
               disabled={isOutOfStock}
+              onClick={handleAddToCart}
               aria-label={
                 isOutOfStock
                   ? `${product.name} is out of stock`
+                  : cartQty > 0
+                  ? `${product.name} is in cart (${cartQty}). Click to add another`
                   : `Add ${product.name} to cart`
               }
               className="h-10 rounded-xl px-5 font-semibold shadow-sm lg:w-full"
             >
-              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-              <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+              {isOutOfStock ? (
+                <>
+                  <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                  <span>Out of Stock</span>
+                </>
+              ) : cartQty > 0 ? (
+                <>
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                  <span>In Cart ({cartQty})</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                  <span>Add to Cart</span>
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -234,10 +300,23 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
             type="button"
             variant="outline"
             size="icon"
-            aria-label={`Add ${product.name} to wishlist`}
-            className="h-9 w-9 rounded-full border-border/60 bg-background/85 text-muted-foreground backdrop-blur-sm transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500"
+            onClick={handleToggleWishlist}
+            aria-pressed={isWishlisted}
+            aria-label={
+              isWishlisted
+                ? `Remove ${product.name} from wishlist`
+                : `Add ${product.name} to wishlist`
+            }
+            className={cn(
+              "h-9 w-9 rounded-full border-border/60 bg-background/85 text-muted-foreground backdrop-blur-sm transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500",
+              isWishlisted &&
+                "border-rose-500/40 bg-rose-500/15 text-rose-500"
+            )}
           >
-            <Heart className="h-4 w-4" aria-hidden="true" />
+            <Heart
+              className={cn("h-4 w-4", isWishlisted && "fill-rose-500")}
+              aria-hidden="true"
+            />
           </Button>
         </div>
 
@@ -287,8 +366,8 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
               {isOutOfStock
                 ? "Out of Stock"
                 : product.stock > 10
-                  ? "In Stock"
-                  : `Only ${product.stock} left`}
+                ? "In Stock"
+                : `Only ${product.stock} left`}
             </span>
           </div>
 
@@ -363,18 +442,41 @@ export function ProductCard({ product, variant = "grid" }: ProductCardProps) {
 
           <Button
             type="button"
-            variant={isOutOfStock ? "secondary" : "accent"}
+            variant={
+              isOutOfStock
+                ? "secondary"
+                : cartQty > 0
+                ? "default"
+                : "accent"
+            }
             size="sm"
             disabled={isOutOfStock}
+            onClick={handleAddToCart}
             aria-label={
               isOutOfStock
                 ? `${product.name} is out of stock`
+                : cartQty > 0
+                ? `${product.name} is in cart (${cartQty}). Click to add another`
                 : `Add ${product.name} to cart`
             }
             className="h-10 rounded-xl px-4 font-semibold shadow-sm"
           >
-            <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-            <span>{isOutOfStock ? "Sold Out" : "Add to Cart"}</span>
+            {isOutOfStock ? (
+              <>
+                <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                <span>Sold Out</span>
+              </>
+            ) : cartQty > 0 ? (
+              <>
+                <Check className="h-4 w-4" aria-hidden="true" />
+                <span>In Cart ({cartQty})</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                <span>Add to Cart</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
