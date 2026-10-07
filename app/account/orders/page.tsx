@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { OrdersTable } from "@/components/account/OrdersTable";
 import { getOrdersByUser } from "@/lib/orders";
-import { getSafeUserById } from "@/lib/users";
+import { getSafeUserFromSession } from "@/lib/users";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -22,9 +22,9 @@ export default async function AccountOrdersPage() {
     redirect("/login?callbackUrl=/account/orders");
   }
 
-  const user = getSafeUserById(session.user.id);
+  const user = getSafeUserFromSession(session.user);
   if (!user) {
-    redirect("/login?callbackUrl=/account/orders");
+    redirect("/login?callbackUrl=/account/orders&sessionExpired=1");
   }
 
   const orders = getOrdersByUser(user.id, user.email);

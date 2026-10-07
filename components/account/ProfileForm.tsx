@@ -16,7 +16,7 @@ import {
   User,
 } from "lucide-react";
 
-import { getInitials } from "@/components/account/UserMenu";
+import { dispatchAuthUserUpdate, getInitials } from "@/components/account/UserMenu";
 import { updateProfileAction } from "@/lib/actions/auth-actions";
 import type { SafeUser } from "@/lib/users";
 import {
@@ -121,8 +121,8 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
     setSavedNotice(true);
     showToast("Profile changes saved!", "success");
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("tk-profile-updated"));
+    if (result.data?.user) {
+      dispatchAuthUserUpdate(result.data.user, "tk-profile-updated");
     }
     router.refresh();
   };

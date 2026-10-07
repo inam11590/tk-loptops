@@ -79,6 +79,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           name: user.fullName,
           email: user.email,
+          image:
+            user.avatarUrl && !user.avatarUrl.startsWith("data:")
+              ? user.avatarUrl
+              : undefined,
         };
       },
     }),

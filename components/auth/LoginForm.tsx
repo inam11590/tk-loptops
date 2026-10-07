@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { dispatchAuthUserUpdate } from "@/components/account/UserMenu";
 import { loginUserAction } from "@/lib/actions/auth-actions";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils";
@@ -92,11 +93,8 @@ export function LoginForm({
     }
 
     if (result.data?.user) {
+      dispatchAuthUserUpdate(result.data.user, "tk-auth-changed");
       await syncWithServerWishlist(result.data.user.wishlistProductIds ?? []);
-    }
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("tk-auth-changed"));
     }
 
     showToast(result.message ?? "Signed in successfully!", "success");

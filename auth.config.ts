@@ -28,9 +28,17 @@ export const authConfig: NextAuthConfig = {
         token.sub = user.id;
         token.name = user.name;
         token.email = user.email;
+        if (user.image) {
+          token.picture = user.image;
+        }
       }
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
+      if (trigger === "update" && session) {
+        if (typeof session.name === "string") {
+          token.name = session.name;
+        }
+        if (typeof session.image === "string") {
+          token.picture = session.image;
+        }
       }
       return token;
     },
@@ -42,6 +50,9 @@ export const authConfig: NextAuthConfig = {
         }
         if (typeof token.email === "string") {
           session.user.email = token.email;
+        }
+        if (typeof token.picture === "string") {
+          session.user.image = token.picture;
         }
       }
       return session;

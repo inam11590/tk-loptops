@@ -97,7 +97,15 @@ const globalForUsers = globalThis as unknown as {
   __tkUsersCache?: UserRecord[];
   __tkResetTokensCache?: PasswordResetTokenRecord[];
   __tkLoginAttempts?: Map<string, LoginAttemptState>;
+  __tkDeletedUserIds?: Set<string>;
 };
+
+function getDeletedUserIds(): Set<string> {
+  if (!globalForUsers.__tkDeletedUserIds) {
+    globalForUsers.__tkDeletedUserIds = new Set<string>();
+  }
+  return globalForUsers.__tkDeletedUserIds;
+}
 
 function readUsersFromDisk(): UserRecord[] {
   try {
@@ -210,12 +218,22 @@ export function getSafeUserByEmail(email: string): SafeUser | null {
 
 /**
  * Resolves a SafeUser from a NextAuth session user object (by ID first, then email fallback).
- * Returns null if the session user no longer exists in the store.
+ * On serverless platforms (e.g. Vercel) where each function invocation may have an isolated memory store,
+ * hydrates the user record from the verified JWT session claims if not yet present in memory.
  */
 export function getSafeUserFromSession(
-  sessionUser?: { id?: string | null; email?: string | null } | null
+  sessionUser?: {
+    id?: string | null;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null
 ): SafeUser | null {
   if (!sessionUser) return null;
+  const deletedIds = getDeletedUserIds();
+  if (sessionUser.id && deletedIds.has(sessionUser.id)) {
+    return null;
+  }
   if (sessionUser.id) {
     const byId = getSafeUserById(sessionUser.id);
     if (byId) return byId;
@@ -223,6 +241,28 @@ export function getSafeUserFromSession(
   if (sessionUser.email) {
     const byEmail = getSafeUserByEmail(sessionUser.email);
     if (byEmail) return byEmail;
+  }
+  if (sessionUser.id && sessionUser.email) {
+    const now = new Date().toISOString();
+    const hydrated: UserRecord = {
+      id: sessionUser.id,
+      fullName:
+        sanitizeText(sessionUser.name ?? "") ||
+        sessionUser.email.split("@")[0] ||
+        "TK Customer",
+      email: sessionUser.email.trim().toLowerCase(),
+      phone: "",
+      avatarUrl: sessionUser.image ?? "",
+      passwordHash: DEMO_PASSWORD_HASH,
+      provider: "credentials",
+      createdAt: now,
+      updatedAt: now,
+      addresses: [],
+      wishlistProductIds: [],
+    };
+    const users = readUsersFromDisk();
+    writeUsersToDisk([hydrated, ...users]);
+    return toSafeUser(hydrated);
   }
   return null;
 }
@@ -350,6 +390,7 @@ export async function updateUserPassword(
  * Permanently deletes a user account by ID.
  */
 export function deleteUser(userId: string): boolean {
+  getDeletedUserIds().add(userId);
   const users = readUsersFromDisk();
   const filtered = users.filter((u) => u.id !== userId);
   if (filtered.length === users.length) return false;

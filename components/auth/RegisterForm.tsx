@@ -17,6 +17,7 @@ import {
   User,
 } from "lucide-react";
 
+import { dispatchAuthUserUpdate } from "@/components/account/UserMenu";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
 import { registerUserAction } from "@/lib/actions/auth-actions";
 import {
@@ -104,11 +105,8 @@ export function RegisterForm({
     }
 
     if (result.data?.user) {
+      dispatchAuthUserUpdate(result.data.user, "tk-auth-changed");
       await syncWithServerWishlist(result.data.user.wishlistProductIds ?? []);
-    }
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("tk-auth-changed"));
     }
 
     showToast(

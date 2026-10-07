@@ -14,6 +14,7 @@ import {
   deleteUserAddress,
   getLoginLockoutStatus,
   getSafeUserById,
+  getSafeUserFromSession,
   getUserByEmail,
   getUserById,
   mergeUserWishlist,
@@ -341,6 +342,8 @@ export async function updateProfileAction(
     };
   }
 
+  getSafeUserFromSession(session.user);
+
   const updated = updateUser(session.user.id, {
     fullName: parsed.data.fullName,
     phone: parsed.data.phone,
@@ -387,6 +390,7 @@ export async function upsertAddressAction(
     };
   }
 
+  getSafeUserFromSession(session.user);
   const result = upsertUserAddress(session.user.id, parsed.data);
   if (result.error) {
     return {

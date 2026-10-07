@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 
+import { dispatchAuthUserUpdate } from "@/components/account/UserMenu";
 import { deleteAccountAction } from "@/lib/actions/auth-actions";
 import { useCartStore } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
@@ -58,9 +59,7 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
         return;
       }
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("tk-auth-changed"));
-      }
+      dispatchAuthUserUpdate(null, "tk-auth-changed");
       setOpen(false);
       showToast("Your account has been permanently deleted.", "info");
       router.push("/");

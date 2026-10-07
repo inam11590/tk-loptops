@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -14,7 +14,11 @@ import {
   User,
 } from "lucide-react";
 
-import { getInitials } from "@/components/account/UserMenu";
+import {
+  dispatchAuthUserUpdate,
+  getInitials,
+  readClientUserCache,
+} from "@/components/account/UserMenu";
 import { logoutUserAction } from "@/lib/actions/auth-actions";
 import type { SafeUser } from "@/lib/users";
 import { cn } from "@/lib/utils";
@@ -73,8 +77,44 @@ export function AccountSidebar({ user }: AccountSidebarProps) {
   const router = useRouter();
   const showToast = useCartStore((state) => state.showToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [currentUser, setCurrentUser] = useState<SafeUser>(user);
 
-  const initials = getInitials(user.fullName);
+  useEffect(() => {
+    const cached = readClientUserCache();
+    const isSame =
+      cached &&
+      (cached.id === user.id ||
+        cached.email.toLowerCase() === user.email.toLowerCase());
+    const merged: SafeUser = isSame
+      ? {
+          ...user,
+          fullName: cached.fullName || user.fullName,
+          phone: cached.phone || user.phone,
+          avatarUrl: cached.avatarUrl || user.avatarUrl,
+        }
+      : user;
+
+    setCurrentUser(merged);
+    dispatchAuthUserUpdate(merged, "tk-auth-changed");
+  }, [user]);
+
+  useEffect(() => {
+    const handleProfileUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ user?: SafeUser | null }>;
+      if (customEvent.detail?.user) {
+        setCurrentUser(customEvent.detail.user);
+      } else {
+        const cached = readClientUserCache();
+        if (cached) setCurrentUser(cached);
+      }
+    };
+    window.addEventListener("tk-profile-updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("tk-profile-updated", handleProfileUpdate);
+    };
+  }, []);
+
+  const initials = getInitials(currentUser.fullName);
 
   const isActiveLink = (href: string, exact: boolean) => {
     if (exact) return pathname === href;
@@ -85,9 +125,7 @@ export function AccountSidebar({ user }: AccountSidebarProps) {
     setIsLoggingOut(true);
     try {
       await logoutUserAction();
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("tk-auth-changed"));
-      }
+      dispatchAuthUserUpdate(null, "tk-auth-changed");
       showToast("You have been signed out.", "info");
       router.push("/");
       router.refresh();
@@ -102,11 +140,11 @@ export function AccountSidebar({ user }: AccountSidebarProps) {
       <div className="space-y-3 lg:hidden">
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-card">
           <div className="flex min-w-0 items-center gap-3">
-            {user.avatarUrl ? (
+            {currentUser.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={user.avatarUrl}
-                alt={user.fullName}
+                src={currentUser.avatarUrl}
+                alt={currentUser.fullName}
                 className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-accent/20"
               />
             ) : (
@@ -116,10 +154,10 @@ export function AccountSidebar({ user }: AccountSidebarProps) {
             )}
             <div className="min-w-0">
               <p className="truncate font-heading text-sm font-bold text-foreground">
-                {user.fullName}
+                {currentUser.fullName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                {user.email}
+                {currentUser.email}
               </p>
             </div>
           </div>
@@ -171,11 +209,11 @@ export function AccountSidebar({ user }: AccountSidebarProps) {
         <div className="sticky top-28 space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-card">
           {/* User Identity Card */}
           <div className="flex items-center gap-3.5 border-b border-border/70 pb-4">
-            {user.avatarUrl ? (
+            {currentUser.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={user.avatarUrl}
-                alt={user.fullName}
+                src={currentUser.avatarUrl}
+                alt={currentUser.fullName}
                 className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-accent/25"
               />
             ) : (
@@ -185,10 +223,10 @@ export function AccountSidebar({ user }: AccountSidebarProps) {
             )}
             <div className="min-w-0">
               <p className="truncate font-heading text-sm font-bold text-foreground">
-                {user.fullName}
+                {currentUser.fullName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                {user.email}
+                {currentUser.email}
               </p>
               <span className="mt-1 inline-block rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                 Verified Member

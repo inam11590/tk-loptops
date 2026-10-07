@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
   Heart,
@@ -21,11 +21,55 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { Button } from "@/components/ui/button";
 
+const USER_CACHE_KEY = "tk-active-user-profile";
+
 export function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "TK";
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
   return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
+}
+
+export function readClientUserCache(): SafeUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(USER_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SafeUser;
+    if (parsed && typeof parsed.id === "string" && typeof parsed.email === "string") {
+      return parsed;
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+  return null;
+}
+
+export function saveClientUserCache(user: SafeUser | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!user) {
+      window.localStorage.removeItem(USER_CACHE_KEY);
+    } else {
+      window.localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+    }
+  } catch {
+    // Ignore storage write errors
+  }
+}
+
+export function dispatchAuthUserUpdate(
+  user: SafeUser | null,
+  eventName: "tk-auth-changed" | "tk-profile-updated" = "tk-auth-changed"
+): void {
+  saveClientUserCache(user);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(eventName, {
+        detail: { user },
+      })
+    );
+  }
 }
 
 /**
@@ -37,6 +81,7 @@ export function getInitials(name: string): string {
  */
 export function UserMenu() {
   const router = useRouter();
+  const pathname = usePathname();
   const showToast = useCartStore((state) => state.showToast);
   const syncWithServerWishlist = useWishlistStore(
     (state) => state.syncWithServerWishlist
@@ -52,31 +97,86 @@ export function UserMenu() {
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      const res = await fetch("/api/account/me", { cache: "no-store" });
+      const res = await fetch("/api/account/me", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
       if (!res.ok) {
-        setUser(null);
+        const cached = readClientUserCache();
+        if (cached && pathname?.startsWith("/account")) {
+          setUser(cached);
+        } else {
+          setUser(null);
+        }
         return;
       }
       const data = (await res.json()) as { user: SafeUser | null };
-      setUser(data.user ?? null);
+      if (data.user) {
+        const cached = readClientUserCache();
+        const isSameUser =
+          cached &&
+          (cached.id === data.user.id ||
+            cached.email.toLowerCase() === data.user.email.toLowerCase());
+        const mergedUser: SafeUser = isSameUser
+          ? {
+              ...data.user,
+              fullName: cached.fullName || data.user.fullName,
+              phone: cached.phone || data.user.phone,
+              avatarUrl: cached.avatarUrl || data.user.avatarUrl,
+            }
+          : data.user;
 
-      if (data.user && syncedUserIdRef.current !== data.user.id) {
-        syncedUserIdRef.current = data.user.id;
-        await syncWithServerWishlist(data.user.wishlistProductIds ?? []);
-      } else if (!data.user) {
-        syncedUserIdRef.current = null;
+        saveClientUserCache(mergedUser);
+        setUser(mergedUser);
+
+        if (syncedUserIdRef.current !== mergedUser.id) {
+          syncedUserIdRef.current = mergedUser.id;
+          await syncWithServerWishlist(mergedUser.wishlistProductIds ?? []);
+        }
+      } else {
+        const cached = readClientUserCache();
+        if (cached && pathname?.startsWith("/account")) {
+          setUser(cached);
+        } else {
+          saveClientUserCache(null);
+          setUser(null);
+          syncedUserIdRef.current = null;
+        }
       }
     } catch {
-      setUser(null);
+      const cached = readClientUserCache();
+      if (cached) {
+        setUser(cached);
+      } else {
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
-  }, [syncWithServerWishlist]);
+  }, [pathname, syncWithServerWishlist]);
 
   useEffect(() => {
+    const cached = readClientUserCache();
+    if (cached) {
+      setUser(cached);
+      setLoading(false);
+    }
     void fetchCurrentUser();
+  }, [fetchCurrentUser, pathname]);
 
-    const handleAuthOrProfileChange = () => {
+  useEffect(() => {
+    const handleAuthOrProfileChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ user?: SafeUser | null }>;
+      if (customEvent.detail && "user" in customEvent.detail) {
+        const nextUser = customEvent.detail.user ?? null;
+        saveClientUserCache(nextUser);
+        setUser(nextUser);
+        setLoading(false);
+        if (!nextUser) {
+          syncedUserIdRef.current = null;
+          return;
+        }
+      }
       void fetchCurrentUser();
     };
 
@@ -122,7 +222,7 @@ export function UserMenu() {
       await logoutUserAction();
       setUser(null);
       syncedUserIdRef.current = null;
-      window.dispatchEvent(new Event("tk-auth-changed"));
+      dispatchAuthUserUpdate(null, "tk-auth-changed");
       showToast("You have been signed out.", "info");
       router.push("/");
       router.refresh();
@@ -170,7 +270,7 @@ export function UserMenu() {
   }
 
   const initials = getInitials(user.fullName);
-  const firstName = user.fullName.split(" ")[0] || "Account";
+  const displayName = user.fullName.trim() || "Account";
 
   return (
     <div ref={menuRef} className="relative">
@@ -180,26 +280,26 @@ export function UserMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={`Account menu for ${user.fullName}`}
-        className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/80 bg-card px-2 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:border-accent/50 hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-2.5"
+        className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/80 bg-card px-2 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:border-accent/50 hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
       >
         {user.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={user.avatarUrl}
             alt={user.fullName}
-            className="h-7 w-7 rounded-full object-cover ring-1 ring-border"
+            className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-border"
           />
         ) : (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-hero-gradient text-[11px] font-bold text-white">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-hero-gradient text-[11px] font-bold text-white">
             {initials}
           </span>
         )}
-        <span className="hidden max-w-[96px] truncate sm:inline">
-          {firstName}
+        <span className="max-w-[90px] truncate sm:max-w-[140px]">
+          {displayName}
         </span>
         <ChevronDown
           className={cn(
-            "hidden h-3.5 w-3.5 text-muted-foreground transition-transform sm:inline",
+            "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
             open && "rotate-180"
           )}
           aria-hidden="true"

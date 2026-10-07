@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AddressList } from "@/components/account/AddressList";
-import { getSafeUserById } from "@/lib/users";
+import { getSafeUserFromSession } from "@/lib/users";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -22,9 +22,9 @@ export default async function AccountAddressesPage() {
     redirect("/login?callbackUrl=/account/addresses");
   }
 
-  const user = getSafeUserById(session.user.id);
+  const user = getSafeUserFromSession(session.user);
   if (!user) {
-    redirect("/login?callbackUrl=/account/addresses");
+    redirect("/login?callbackUrl=/account/addresses&sessionExpired=1");
   }
 
   return (
