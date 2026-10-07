@@ -1,7 +1,7 @@
 /**
  * Centralized application, currency, shipping, tax, delivery & payment configuration for TK Laptop.
- * Change `currency`, `shipping`, `deliveryMethods`, or `paymentMethodsConfig` here to update
- * calculations and options across the entire store.
+ * Supports dynamic admin overrides via `getSettings()` backed by `.data/settings.json` on the server
+ * and hydrated to the client runtime.
  */
 
 export type DeliveryMethodId = "standard" | "express" | "pickup";
@@ -24,6 +24,43 @@ export interface PaymentMethodConfig {
   tagline: string;
   description: string;
   codFee: number;
+}
+
+export interface StoreSettings {
+  storeInfo: {
+    name: string;
+    tagline: string;
+    email: string;
+    phone: string;
+    address: string;
+    hours: string;
+  };
+  currency: {
+    code: string;
+    symbol: string;
+    locale: string;
+    maximumFractionDigits: number;
+  };
+  shipping: {
+    freeDeliveryThreshold: number;
+    flatShippingFee: number;
+    expressShippingFee: number;
+    codHandlingFee: number;
+    taxRate: number; // e.g., 0.08 for 8%
+    lowStockThreshold: number;
+    warrantyText: string;
+  };
+  bankDetails: {
+    bankName: string;
+    accountTitle: string;
+    accountNumber: string;
+    routingNumber: string;
+    iban: string;
+    swiftCode: string;
+    instructions: string;
+  };
+  enabledPaymentMethods: PaymentMethodId[];
+  updatedAt: string;
 }
 
 export const SITE_CONFIG = {
@@ -51,6 +88,7 @@ export const SITE_CONFIG = {
     expressShippingFee: 49,
     codHandlingFee: 15,
     taxRate: 0.08, // 8% estimated sales tax
+    lowStockThreshold: 5,
     warrantyText: "1-Year Official Warranty",
   },
   checkout: {
@@ -184,19 +222,122 @@ export const SITE_CONFIG = {
   ],
 } as const;
 
+export const DEFAULT_STORE_SETTINGS: StoreSettings = {
+  storeInfo: {
+    name: SITE_CONFIG.name,
+    tagline: SITE_CONFIG.tagline,
+    email: SITE_CONFIG.contact.email,
+    phone: SITE_CONFIG.contact.phone,
+    address: SITE_CONFIG.contact.address,
+    hours: SITE_CONFIG.contact.hours,
+  },
+  currency: {
+    code: SITE_CONFIG.currency.code,
+    symbol: SITE_CONFIG.currency.symbol,
+    locale: SITE_CONFIG.currency.locale,
+    maximumFractionDigits: SITE_CONFIG.currency.maximumFractionDigits,
+  },
+  shipping: {
+    freeDeliveryThreshold: SITE_CONFIG.shipping.freeDeliveryThreshold,
+    flatShippingFee: SITE_CONFIG.shipping.flatShippingFee,
+    expressShippingFee: SITE_CONFIG.shipping.expressShippingFee,
+    codHandlingFee: SITE_CONFIG.shipping.codHandlingFee,
+    taxRate: SITE_CONFIG.shipping.taxRate,
+    lowStockThreshold: SITE_CONFIG.shipping.lowStockThreshold,
+    warrantyText: SITE_CONFIG.shipping.warrantyText,
+  },
+  bankDetails: {
+    bankName: SITE_CONFIG.checkout.bankDetails.bankName,
+    accountTitle: SITE_CONFIG.checkout.bankDetails.accountTitle,
+    accountNumber: SITE_CONFIG.checkout.bankDetails.accountNumber,
+    routingNumber: SITE_CONFIG.checkout.bankDetails.routingNumber,
+    iban: SITE_CONFIG.checkout.bankDetails.iban,
+    swiftCode: SITE_CONFIG.checkout.bankDetails.swiftCode,
+    instructions: SITE_CONFIG.checkout.bankDetails.instructions,
+  },
+  enabledPaymentMethods: ["card", "cod", "bank_transfer", "mobile_wallet"],
+  updatedAt: "2026-10-01T09:00:00.000Z",
+};
+
+const globalForSettings = globalThis as unknown as {
+  __tkSettingsCache?: StoreSettings;
+};
+
 /**
- * Formats a numeric price using the centralized currency settings in SITE_CONFIG.
+ * Hydrates the runtime settings cache (used on both server and client).
+ */
+export function setRuntimeSettings(settings: StoreSettings): void {
+  globalForSettings.__tkSettingsCache = settings;
+}
+
+/**
+ * Returns the active store settings, merging any saved overrides from `.data/settings.json`
+ * (or the hydrated client cache) with defaults from `SITE_CONFIG`.
+ */
+export function getSettings(): StoreSettings {
+  if (typeof window === "undefined") {
+    try {
+      const nodeRequire = eval("require") as NodeRequire;
+      const fs = nodeRequire("fs") as typeof import("fs");
+      const path = nodeRequire("path") as typeof import("path");
+      const settingsFile = path.join(process.cwd(), ".data", "settings.json");
+      if (fs.existsSync(settingsFile)) {
+        const raw = fs.readFileSync(settingsFile, "utf8");
+        const parsed = JSON.parse(raw) as Partial<StoreSettings>;
+        const merged: StoreSettings = {
+          storeInfo: {
+            ...DEFAULT_STORE_SETTINGS.storeInfo,
+            ...(parsed.storeInfo ?? {}),
+          },
+          currency: {
+            ...DEFAULT_STORE_SETTINGS.currency,
+            ...(parsed.currency ?? {}),
+          },
+          shipping: {
+            ...DEFAULT_STORE_SETTINGS.shipping,
+            ...(parsed.shipping ?? {}),
+          },
+          bankDetails: {
+            ...DEFAULT_STORE_SETTINGS.bankDetails,
+            ...(parsed.bankDetails ?? {}),
+          },
+          enabledPaymentMethods:
+            Array.isArray(parsed.enabledPaymentMethods) &&
+            parsed.enabledPaymentMethods.length > 0
+              ? parsed.enabledPaymentMethods
+              : DEFAULT_STORE_SETTINGS.enabledPaymentMethods,
+          updatedAt: parsed.updatedAt ?? DEFAULT_STORE_SETTINGS.updatedAt,
+        };
+        globalForSettings.__tkSettingsCache = merged;
+        return merged;
+      }
+    } catch {
+      // Fallback to in-memory or default settings
+    }
+  }
+
+  return globalForSettings.__tkSettingsCache ?? DEFAULT_STORE_SETTINGS;
+}
+
+/**
+ * Formats a numeric price using the active currency settings from `getSettings()`.
  * @param amount Numeric price value
  * @returns Formatted currency string (e.g., "$1,299")
  */
 export function formatPrice(amount: number): string {
-  const { code, locale, maximumFractionDigits } = SITE_CONFIG.currency;
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: code,
-    maximumFractionDigits,
-    minimumFractionDigits: 0,
-  }).format(amount);
+  const settings = getSettings();
+  const { code, locale, maximumFractionDigits } = settings.currency;
+  try {
+    return new Intl.NumberFormat(locale || "en-US", {
+      style: "currency",
+      currency: code || "USD",
+      maximumFractionDigits:
+        typeof maximumFractionDigits === "number" ? maximumFractionDigits : 0,
+      minimumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${settings.currency.symbol || "$"}${Math.round(amount).toLocaleString("en-US")}`;
+  }
 }
 
 /**

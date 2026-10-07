@@ -1,16 +1,17 @@
 import { ACCESSORIES } from "@/data/accessories";
-import { COUPONS, type Coupon } from "@/data/coupons";
-import { PRODUCTS } from "@/data/products";
+import type { Coupon } from "@/data/coupons";
 import {
   calculateDeliveryFee,
   calculatePaymentFee,
 } from "@/lib/checkout";
 import {
   formatPrice,
-  SITE_CONFIG,
+  getSettings,
   type DeliveryMethodId,
   type PaymentMethodId,
 } from "@/lib/config";
+import { getAllCoupons } from "@/lib/couponStore";
+import { getPublishedProducts } from "@/lib/productStore";
 import type { Product } from "@/types/product";
 
 export interface CartItemData {
@@ -58,6 +59,7 @@ export interface CouponValidationResult {
 export interface CartCalculationOptions {
   deliveryMethodId?: DeliveryMethodId;
   paymentMethodId?: PaymentMethodId;
+  userIdentifier?: string;
   now?: Date;
 }
 
@@ -86,7 +88,7 @@ export interface CartTotals {
 }
 
 /**
- * Resolves a cart item (`productId` or `slug`) against the live PRODUCTS and ACCESSORIES catalogs.
+ * Resolves a cart item (`productId` or `slug`) against the live published products and accessories catalogs.
  */
 export function resolveCatalogItem(productIdOrSlug: string): {
   productId: string;
@@ -101,7 +103,8 @@ export function resolveCatalogItem(productIdOrSlug: string): {
   itemType: "laptop" | "accessory";
   product?: Product;
 } | null {
-  const laptop = PRODUCTS.find(
+  const publishedLaptops = getPublishedProducts();
+  const laptop = publishedLaptops.find(
     (p) => p.id === productIdOrSlug || p.slug === productIdOrSlug
   );
   if (laptop) {
@@ -164,7 +167,7 @@ export function productToCartItem(
 
 /**
  * Reconciles persisted cart items against live catalog data to detect
- * price changes, stock reductions, or out-of-stock states.
+ * price changes, stock reductions, unpublished items, or out-of-stock states.
  */
 export function reconcileCartItems(items: CartItemData[]): ReconciledCartItem[] {
   return items.map((item) => {
@@ -172,10 +175,10 @@ export function reconcileCartItems(items: CartItemData[]): ReconciledCartItem[] 
 
     const currentPrice = live ? live.price : item.price;
     const currentOldPrice = live ? live.oldPrice : item.oldPrice;
-    const currentStock = live ? live.stock : item.stock;
+    const currentStock = live ? live.stock : 0;
     const specsSummary = live ? live.specsSummary : item.specsSummary;
 
-    const priceChanged = currentPrice !== item.price;
+    const priceChanged = Boolean(live && currentPrice !== item.price);
     const isOutOfStock = currentStock <= 0;
 
     let effectiveQuantity = item.quantity;
@@ -183,8 +186,9 @@ export function reconcileCartItems(items: CartItemData[]): ReconciledCartItem[] 
 
     if (isOutOfStock) {
       effectiveQuantity = 0;
-      stockWarning =
-        "This item is now out of stock and has been excluded from your total. Please remove it or move it to your wishlist.";
+      stockWarning = !live
+        ? "This item is no longer available in our catalog and has been excluded from your total."
+        : "This item is now out of stock and has been excluded from your total. Please remove it or move it to your wishlist.";
     } else if (item.quantity > currentStock) {
       effectiveQuantity = currentStock;
       stockWarning = `Stock availability updated: only ${currentStock} left. Quantity capped at ${currentStock}.`;
@@ -207,12 +211,13 @@ export function reconcileCartItems(items: CartItemData[]): ReconciledCartItem[] 
 }
 
 /**
- * Pure function to validate a coupon code against a given cart subtotal and timestamp.
+ * Pure function to validate a coupon code against the coupon store, cart subtotal, usage limits, and timestamp.
  */
 export function validateCoupon(
   rawCode: string,
   subtotal: number,
-  now: Date = new Date()
+  now: Date = new Date(),
+  userIdentifier?: string
 ): CouponValidationResult {
   const code = rawCode.trim().toUpperCase();
   if (!code) {
@@ -223,13 +228,35 @@ export function validateCoupon(
     };
   }
 
-  const coupon = COUPONS.find((c) => c.code.toUpperCase() === code);
+  const coupons = getAllCoupons();
+  const coupon = coupons.find((c) => c.code.toUpperCase() === code);
   if (!coupon) {
     return {
       valid: false,
       discountAmount: 0,
       message: `Promo code "${code}" is invalid or not recognized.`,
     };
+  }
+
+  if (coupon.isActive === false) {
+    return {
+      valid: false,
+      coupon,
+      discountAmount: 0,
+      message: `Promo code "${coupon.code}" is currently inactive.`,
+    };
+  }
+
+  if (coupon.startDate) {
+    const startDate = new Date(coupon.startDate);
+    if (now.getTime() < startDate.getTime()) {
+      return {
+        valid: false,
+        coupon,
+        discountAmount: 0,
+        message: `Promo code "${coupon.code}" is not yet active.`,
+      };
+    }
   }
 
   const expiryDate = new Date(coupon.expiresAt);
@@ -240,6 +267,36 @@ export function validateCoupon(
       discountAmount: 0,
       message: `Promo code "${coupon.code}" has expired.`,
     };
+  }
+
+  if (
+    typeof coupon.usageLimit === "number" &&
+    coupon.usageLimit > 0 &&
+    (coupon.usedCount ?? 0) >= coupon.usageLimit
+  ) {
+    return {
+      valid: false,
+      coupon,
+      discountAmount: 0,
+      message: `Promo code "${coupon.code}" has reached its maximum usage limit.`,
+    };
+  }
+
+  if (
+    userIdentifier &&
+    typeof coupon.perUserLimit === "number" &&
+    coupon.perUserLimit > 0
+  ) {
+    const userKey = userIdentifier.trim().toLowerCase();
+    const userUsed = coupon.usedByUser?.[userKey] ?? 0;
+    if (userUsed >= coupon.perUserLimit) {
+      return {
+        valid: false,
+        coupon,
+        discountAmount: 0,
+        message: `You have already used promo code "${coupon.code}" the maximum allowed number of times (${coupon.perUserLimit}).`,
+      };
+    }
   }
 
   if (subtotal < coupon.minOrderAmount) {
@@ -280,7 +337,7 @@ export function validateCoupon(
 }
 
 /**
- * Pure function to calculate shipping cost based on subtotal, delivery method, and SITE_CONFIG rules.
+ * Pure function to calculate shipping cost based on subtotal, delivery method, and active `getSettings()` rules.
  */
 export function calculateShipping(
   subtotal: number,
@@ -292,7 +349,8 @@ export function calculateShipping(
   freeShippingProgress: number;
   qualifiesForFreeShipping: boolean;
 } {
-  const { freeDeliveryThreshold } = SITE_CONFIG.shipping;
+  const settings = getSettings();
+  const { freeDeliveryThreshold } = settings.shipping;
 
   if (subtotal <= 0) {
     return {
@@ -307,10 +365,10 @@ export function calculateShipping(
   const qualifiesForFreeShipping = subtotal >= freeDeliveryThreshold;
   const shipping = calculateDeliveryFee(deliveryMethodId, subtotal);
   const freeShippingRemaining = Math.max(0, freeDeliveryThreshold - subtotal);
-  const freeShippingProgress = Math.min(
-    100,
-    Math.round((subtotal / freeDeliveryThreshold) * 100)
-  );
+  const freeShippingProgress =
+    freeDeliveryThreshold > 0
+      ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100))
+      : 100;
 
   return {
     shipping,
@@ -335,6 +393,7 @@ export function calculateCartTotals(
   const now = options.now ?? new Date();
   const deliveryMethodId = options.deliveryMethodId ?? "standard";
   const paymentMethodId = options.paymentMethodId ?? "card";
+  const settings = getSettings();
 
   const reconciledItems = reconcileCartItems(items);
 
@@ -366,7 +425,12 @@ export function calculateCartTotals(
   let couponDiscount = 0;
 
   if (appliedCouponCode && subtotal > 0) {
-    couponValidation = validateCoupon(appliedCouponCode, subtotal, now);
+    couponValidation = validateCoupon(
+      appliedCouponCode,
+      subtotal,
+      now,
+      options.userIdentifier
+    );
     if (couponValidation.valid) {
       couponDiscount = couponValidation.discountAmount;
     }
@@ -383,7 +447,7 @@ export function calculateCartTotals(
   const codFee = calculatePaymentFee(paymentMethodId, subtotal);
 
   const taxableAmount = Math.max(0, subtotal - couponDiscount);
-  const taxRate = SITE_CONFIG.shipping.taxRate;
+  const taxRate = settings.shipping.taxRate;
   const tax = Math.round(taxableAmount * taxRate);
   const taxRatePercent = Math.round(taxRate * 100);
 
@@ -422,7 +486,7 @@ export function calculateCartTotals(
 }
 
 /**
- * Returns recommended products based on the items currently in the cart.
+ * Returns recommended published products based on the items currently in the cart.
  */
 export function getCartRecommendations(
   items: CartItemData[],
@@ -435,7 +499,7 @@ export function getCartRecommendations(
       .filter((b): b is "HP" | "Dell" => b === "HP" || b === "Dell")
   );
 
-  const available = PRODUCTS.filter(
+  const available = getPublishedProducts().filter(
     (p) => !inCartIds.has(p.id) && p.stock > 0
   );
 

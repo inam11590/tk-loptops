@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PRODUCTS } from "@/data/products";
 import { SITE_CONFIG } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { ProductListing } from "@/components/product/product-listing";
 import { ProductListingSkeleton } from "@/components/product/product-listing-skeleton";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const hpCount = PRODUCTS.filter((p) => p.brand === "HP").length;
+  const products = getPublishedProducts();
+  const hpCount = products.filter((p) => p.brand === "HP").length;
   const title = "Buy HP Laptops — Spectre, EliteBook, OMEN & Pavilion";
   const description = `Shop ${hpCount} genuine HP laptops including Spectre x360 OLED convertibles, Wolf-secured EliteBook workstations, and OMEN RTX gaming rigs at ${SITE_CONFIG.name}.`;
 
@@ -23,6 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function HpLaptopsPage() {
+  const products = getPublishedProducts();
   return (
     <Suspense fallback={<ProductListingSkeleton />}>
       <ProductListing
@@ -32,7 +34,7 @@ export default function HpLaptopsPage() {
           { label: "Laptops", href: "/laptops" },
           { label: "HP" },
         ]}
-        products={PRODUCTS}
+        products={products}
         preset={{ fixedBrand: "HP" }}
       />
     </Suspense>

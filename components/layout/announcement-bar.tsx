@@ -1,11 +1,13 @@
 import { ShieldCheck, Sparkles, Truck } from "lucide-react";
-import { SITE_CONFIG, formatPrice } from "@/lib/config";
+import { SITE_CONFIG, formatPrice, getSettings } from "@/lib/config";
 import { Container } from "@/components/common/container";
 
 /**
  * Top announcement bar displaying free delivery threshold and official warranty info.
  */
 export function AnnouncementBar() {
+  const settings = getSettings();
+
   return (
     <div
       role="region"
@@ -22,7 +24,7 @@ export function AnnouncementBar() {
             <span>
               Free express delivery on orders over{" "}
               <strong className="font-semibold text-white">
-                {formatPrice(SITE_CONFIG.shipping.freeDeliveryThreshold)}
+                {formatPrice(settings.shipping.freeDeliveryThreshold)}
               </strong>
             </span>
           </span>
@@ -34,7 +36,7 @@ export function AnnouncementBar() {
               className="h-3.5 w-3.5 text-blue-400"
               aria-hidden="true"
             />
-            <span>{SITE_CONFIG.shipping.warrantyText} on all laptops</span>
+            <span>{settings.shipping.warrantyText || SITE_CONFIG.shipping.warrantyText} on all laptops</span>
           </span>
         </div>
 
@@ -45,10 +47,10 @@ export function AnnouncementBar() {
             •
           </span>
           <a
-            href={`tel:${SITE_CONFIG.contact.phone}`}
+            href={`tel:${settings.storeInfo.phone}`}
             className="font-semibold text-white underline-offset-4 hover:text-blue-400 hover:underline"
           >
-            {SITE_CONFIG.contact.phone}
+            {settings.storeInfo.phone}
           </a>
         </div>
       </Container>

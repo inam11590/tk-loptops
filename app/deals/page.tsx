@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PRODUCTS } from "@/data/products";
 import { SITE_CONFIG } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { ProductListing } from "@/components/product/product-listing";
 import { ProductListingSkeleton } from "@/components/product/product-listing-skeleton";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const dealsCount = PRODUCTS.filter(
+  const products = getPublishedProducts();
+  const dealsCount = products.filter(
     (p) => p.oldPrice && p.oldPrice > p.price
   ).length;
   const title = "Laptop Deals & Flash Discounts — Save on HP & Dell";
@@ -25,13 +26,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function DealsPage() {
+  const products = getPublishedProducts();
   return (
     <Suspense fallback={<ProductListingSkeleton />}>
       <ProductListing
         title="Hot Laptop Deals & Price Drops"
         description="Limited-time instant savings on factory-sealed HP and Dell laptops—sorted by biggest discount first and backed by our 1-Year Official Warranty."
         breadcrumbs={[{ label: "Deals" }]}
-        products={PRODUCTS}
+        products={products}
         preset={{ dealsOnly: true }}
       />
     </Suspense>

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search, X } from "lucide-react";
-import { PRODUCTS } from "@/data/products";
+import { getPublishedProducts } from "@/lib/productStore";
 import { formatPrice } from "@/lib/config";
 import { getSearchSuggestions } from "@/lib/products";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,11 @@ export function SearchBar({ className, onNavigate }: SearchBarProps) {
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  const suggestions = getSearchSuggestions(debouncedQuery, PRODUCTS, 5);
+  const suggestions = getSearchSuggestions(
+    debouncedQuery,
+    getPublishedProducts(),
+    5
+  );
   const showDropdown = isOpen && debouncedQuery.trim().length > 0;
 
   // Close dropdown on click outside

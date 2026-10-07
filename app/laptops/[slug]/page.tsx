@@ -12,21 +12,24 @@ import { FrequentlyBoughtTogether } from "@/components/product/FrequentlyBoughtT
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { RecentlyViewed } from "@/components/product/RecentlyViewed";
 import { StickyCartBar } from "@/components/product/StickyCartBar";
-import { PRODUCTS } from "@/data/products";
-import { getReviewsForProduct } from "@/data/reviews";
 import { SITE_CONFIG } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import {
   getProductBySlug,
   getRelatedProducts,
   getSimilarProductsForComparison,
 } from "@/lib/products";
+import { getApprovedReviewsForProduct } from "@/lib/reviewStore";
+
+export const dynamicParams = true;
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  const slugs = PRODUCTS.map((product) => ({
+  const published = getPublishedProducts();
+  const slugs = published.map((product) => ({
     slug: product.slug,
   }));
   // Include the example alias slug so /laptops/hp-pavilion-15 is pre-rendered too
@@ -38,7 +41,8 @@ export async function generateMetadata({
   params,
 }: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const products = getPublishedProducts();
+  const product = getProductBySlug(slug, products);
 
   if (!product) {
     return {
@@ -47,8 +51,12 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${product.name} (${product.specs.processor}, ${product.specs.ram}, ${product.specs.storage})`;
-  const description = `${product.description} Official ${product.brand} warranty, free insured delivery, and easy returns at ${SITE_CONFIG.name}.`;
+  const title =
+    product.seoTitle ||
+    `${product.name} (${product.specs.processor}, ${product.specs.ram}, ${product.specs.storage})`;
+  const description =
+    product.seoDescription ||
+    `${product.description} Official ${product.brand} warranty, free insured delivery, and easy returns at ${SITE_CONFIG.name}.`;
 
   return {
     title,
@@ -80,19 +88,20 @@ export default async function ProductDetailPage({
   params,
 }: ProductDetailPageProps) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const products = getPublishedProducts();
+  const product = getProductBySlug(slug, products);
 
   if (!product) {
     notFound();
   }
 
-  const reviews = getReviewsForProduct(product);
+  const reviews = getApprovedReviewsForProduct(product);
   const similarForCompare = getSimilarProductsForComparison(
     product,
-    PRODUCTS,
+    products,
     2
   );
-  const relatedProducts = getRelatedProducts(product, PRODUCTS, 6);
+  const relatedProducts = getRelatedProducts(product, products, 6);
   const brandSlug = product.brand.toLowerCase();
 
   // JSON-LD Product schema for rich search snippets

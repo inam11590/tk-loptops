@@ -1,5 +1,5 @@
-import { PRODUCTS } from "@/data/products";
 import { calculateDiscountPercentage } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { LaptopBrand, LaptopCategory, Product } from "@/types";
 
 export const ITEMS_PER_PAGE = 12;
@@ -166,7 +166,7 @@ const CATEGORY_LABELS: Record<LaptopCategory, string> = {
  * Derives all filter facets, price bounds, and product counts from a base product list.
  */
 export function deriveFilterFacets(
-  products: Product[] = PRODUCTS,
+  products: Product[] = getPublishedProducts(),
   preset?: ListingRoutePreset
 ): DerivedFilterFacets {
   const scoped = products.filter((p) => {
@@ -322,7 +322,7 @@ function computeSearchScore(product: Product, rawQuery: string): number {
  */
 export function getSearchSuggestions(
   query: string,
-  products: Product[] = PRODUCTS,
+  products: Product[] = getPublishedProducts(),
   limit = 5
 ): Product[] {
   const cleaned = query.trim();
@@ -603,7 +603,7 @@ const SLUG_ALIASES: Record<string, string> = {
  */
 export function getProductBySlug(
   slug: string,
-  products: Product[] = PRODUCTS
+  products: Product[] = getPublishedProducts()
 ): Product | undefined {
   const normalized = slug.trim().toLowerCase();
   const targetSlug = SLUG_ALIASES[normalized] ?? normalized;
@@ -616,7 +616,7 @@ export function getProductBySlug(
  */
 export function getSimilarProductsForComparison(
   product: Product,
-  products: Product[] = PRODUCTS,
+  products: Product[] = getPublishedProducts(),
   count = 2
 ): Product[] {
   return products
@@ -640,7 +640,7 @@ export function getSimilarProductsForComparison(
  */
 export function getRelatedProducts(
   product: Product,
-  products: Product[] = PRODUCTS,
+  products: Product[] = getPublishedProducts(),
   limit = 6
 ): Product[] {
   return products

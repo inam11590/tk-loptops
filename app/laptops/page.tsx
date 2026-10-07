@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PRODUCTS } from "@/data/products";
 import { SITE_CONFIG } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { ProductListing } from "@/components/product/product-listing";
 import { ProductListingSkeleton } from "@/components/product/product-listing-skeleton";
 
@@ -13,6 +13,7 @@ export async function generateMetadata({
   searchParams,
 }: LaptopsPageProps): Promise<Metadata> {
   const params = await searchParams;
+  const products = getPublishedProducts();
   const rawCategory =
     typeof params.category === "string" ? params.category : undefined;
   const categoryTitle = rawCategory
@@ -20,7 +21,7 @@ export async function generateMetadata({
     : "";
 
   const title = `Buy ${categoryTitle}HP & Dell Laptops`;
-  const description = `Browse all ${PRODUCTS.length} certified HP and Dell ${categoryTitle.toLowerCase()}laptops with transparent pricing, 1-year official warranty, and fast express delivery at ${SITE_CONFIG.name}.`;
+  const description = `Browse all ${products.length} certified HP and Dell ${categoryTitle.toLowerCase()}laptops with transparent pricing, 1-year official warranty, and fast express delivery at ${SITE_CONFIG.name}.`;
 
   return {
     title,
@@ -35,13 +36,14 @@ export async function generateMetadata({
 }
 
 export default function AllLaptopsPage() {
+  const products = getPublishedProducts();
   return (
     <Suspense fallback={<ProductListingSkeleton />}>
       <ProductListing
         title="All HP & Dell Laptops"
-        description="Explore our complete catalog of 24 factory-sealed HP and Dell laptops—filterable by category, processor, RAM, SSD capacity, display size, and graphics."
+        description={`Explore our complete catalog of ${products.length} factory-sealed HP and Dell laptops—filterable by category, processor, RAM, SSD capacity, display size, and graphics.`}
         breadcrumbs={[{ label: "Laptops" }]}
-        products={PRODUCTS}
+        products={products}
       />
     </Suspense>
   );

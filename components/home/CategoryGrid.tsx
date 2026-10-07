@@ -7,8 +7,8 @@ import {
   GraduationCap,
   Wallet,
 } from "lucide-react";
-import { PRODUCTS } from "@/data/products";
 import { formatPrice } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { LaptopCategory } from "@/types";
 import { Container } from "@/components/common/container";
 import { FadeIn } from "@/components/common/fade-in";
@@ -60,6 +60,7 @@ const CATEGORIES: CategoryConfig[] = [
  * each with an icon, model count, starting price, and link to /laptops?category=...
  */
 export function CategoryGrid() {
+  const products = getPublishedProducts();
   return (
     <section
       aria-labelledby="categories-heading"
@@ -78,7 +79,7 @@ export function CategoryGrid() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           {CATEGORIES.map((category, index) => {
             const Icon = category.icon;
-            const matching = PRODUCTS.filter(
+            const matching = products.filter(
               (p) => p.category === category.slug
             );
             const minPrice =

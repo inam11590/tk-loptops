@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Poppins } from "next/font/google";
-import { SITE_CONFIG } from "@/lib/config";
+import { getSettings, SITE_CONFIG } from "@/lib/config";
+import { getAllCoupons } from "@/lib/couponStore";
+import { getPublishedProducts } from "@/lib/productStore";
+import { StoreRuntimeHydrator } from "@/components/common/store-runtime-hydrator";
 import { ThemeProvider } from "@/components/common/theme-provider";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { Header } from "@/components/layout/header";
@@ -86,6 +89,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = getSettings();
+  const products = getPublishedProducts();
+  const coupons = getAllCoupons();
+
   return (
     <html
       lang="en"
@@ -107,13 +114,17 @@ export default function RootLayout({
             Skip to main content
           </a>
 
-          <AnnouncementBar />
-          <Header />
-          <main id="main-content" className="flex-1">
+          <StoreRuntimeHydrator
+            settings={settings}
+            products={products}
+            coupons={coupons}
+            announcementBar={<AnnouncementBar />}
+            header={<Header />}
+            footer={<Footer />}
+            miniCart={<MiniCart />}
+          >
             {children}
-          </main>
-          <Footer />
-          <MiniCart />
+          </StoreRuntimeHydrator>
         </ThemeProvider>
       </body>
     </html>

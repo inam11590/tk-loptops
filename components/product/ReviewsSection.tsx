@@ -180,8 +180,10 @@ export function ReviewsSection({
             productSlug={product.slug}
             productName={product.name}
             onReviewSubmitted={(newReview) => {
-              setReviews((prev) => [newReview, ...prev]);
-              setVisibleCount((prev) => Math.max(prev, 5));
+              if (newReview.status === "Approved") {
+                setReviews((prev) => [newReview, ...prev]);
+                setVisibleCount((prev) => Math.max(prev, 5));
+              }
             }}
           />
         </div>

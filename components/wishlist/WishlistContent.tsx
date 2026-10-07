@@ -17,7 +17,7 @@ import {
 import { EmptyWishlist } from "@/components/wishlist/EmptyWishlist";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PRODUCTS } from "@/data/products";
+import { getPublishedProducts } from "@/lib/productStore";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { productToCartItem } from "@/lib/cart";
 import { calculateDiscountPercentage, formatPrice } from "@/lib/config";
@@ -62,8 +62,9 @@ export function WishlistContent() {
     );
   }
 
+  const publishedProducts = getPublishedProducts();
   const savedProducts: Product[] = wishlistIds
-    .map((id) => PRODUCTS.find((p) => p.id === id))
+    .map((id) => publishedProducts.find((p) => p.id === id))
     .filter((p): p is Product => Boolean(p));
 
   if (savedProducts.length === 0) {

@@ -9,6 +9,8 @@ export const MAX_LOGIN_ATTEMPTS = 5;
 export const LOGIN_LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 export const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
+export type UserRole = "customer" | "admin";
+
 export interface SavedAddress {
   id: string;
   label: string;
@@ -31,6 +33,8 @@ export interface UserRecord {
   avatarUrl: string;
   passwordHash: string;
   provider: "credentials" | "google";
+  role: UserRole;
+  disabled?: boolean;
   createdAt: string;
   updatedAt: string;
   addresses: SavedAddress[];
@@ -72,6 +76,8 @@ const SEED_USERS: UserRecord[] = [
     avatarUrl: "",
     passwordHash: DEMO_PASSWORD_HASH,
     provider: "credentials",
+    role: "customer",
+    disabled: false,
     createdAt: "2026-09-15T10:00:00.000Z",
     updatedAt: "2026-10-05T14:20:00.000Z",
     addresses: [
@@ -91,6 +97,64 @@ const SEED_USERS: UserRecord[] = [
     ],
     wishlistProductIds: ["hp-01"],
   },
+  {
+    id: "usr-demo-sarah",
+    fullName: "Sarah Jenkins",
+    email: "sarah.jenkins@example.com",
+    phone: "+1 (206) 555-0188",
+    avatarUrl: "",
+    passwordHash: DEMO_PASSWORD_HASH,
+    provider: "credentials",
+    role: "customer",
+    disabled: false,
+    createdAt: "2026-09-22T09:15:00.000Z",
+    updatedAt: "2026-10-04T11:30:00.000Z",
+    addresses: [
+      {
+        id: "addr-demo-2",
+        label: "Home",
+        fullName: "Sarah Jenkins",
+        phone: "+1 (206) 555-0188",
+        streetAddress: "1200 Pine Street",
+        apartment: "Apt 12B",
+        city: "Seattle",
+        stateProvince: "WA",
+        postalCode: "98101",
+        country: "United States",
+        isDefault: true,
+      },
+    ],
+    wishlistProductIds: ["dell-01", "hp-03"],
+  },
+  {
+    id: "usr-demo-marcus",
+    fullName: "Marcus Vance",
+    email: "marcus.vance@example.com",
+    phone: "+1 (312) 555-0194",
+    avatarUrl: "",
+    passwordHash: DEMO_PASSWORD_HASH,
+    provider: "credentials",
+    role: "customer",
+    disabled: false,
+    createdAt: "2026-10-01T16:45:00.000Z",
+    updatedAt: "2026-10-06T08:10:00.000Z",
+    addresses: [
+      {
+        id: "addr-demo-3",
+        label: "Studio",
+        fullName: "Marcus Vance",
+        phone: "+1 (312) 555-0194",
+        streetAddress: "400 N Michigan Ave",
+        apartment: "Floor 9",
+        city: "Chicago",
+        stateProvince: "IL",
+        postalCode: "60611",
+        country: "United States",
+        isDefault: true,
+      },
+    ],
+    wishlistProductIds: ["dell-03"],
+  },
 ];
 
 const globalForUsers = globalThis as unknown as {
@@ -107,14 +171,88 @@ function getDeletedUserIds(): Set<string> {
   return globalForUsers.__tkDeletedUserIds;
 }
 
+/**
+ * Normalizes a user record so `role` and `disabled` are always defined.
+ */
+function normalizeUserRecord(u: UserRecord): UserRecord {
+  return {
+    ...u,
+    role: u.role === "admin" ? "admin" : "customer",
+    disabled: Boolean(u.disabled),
+    addresses: Array.isArray(u.addresses) ? u.addresses : [],
+    wishlistProductIds: Array.isArray(u.wishlistProductIds)
+      ? u.wishlistProductIds
+      : [],
+  };
+}
+
+/**
+ * Seeds the initial admin user from `process.env.ADMIN_EMAIL` and `process.env.ADMIN_PASSWORD`
+ * if both environment variables are configured and that email is not yet present.
+ * Never hardcodes admin credentials.
+ */
+function ensureEnvAdminSeeded(users: UserRecord[]): {
+  users: UserRecord[];
+  changed: boolean;
+} {
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+
+  if (!adminEmail || !adminPassword) {
+    return { users, changed: false };
+  }
+
+  const existingIdx = users.findIndex(
+    (u) => u.email.toLowerCase() === adminEmail
+  );
+
+  if (existingIdx !== -1) {
+    const current = users[existingIdx]!;
+    if (current.role !== "admin") {
+      const next = [...users];
+      next[existingIdx] = {
+        ...current,
+        role: "admin",
+        disabled: false,
+      };
+      return { users: next, changed: true };
+    }
+    return { users, changed: false };
+  }
+
+  const now = "2026-09-01T08:00:00.000Z";
+  const seededAdmin: UserRecord = {
+    id: "usr-admin-seed",
+    fullName: "TK Store Administrator",
+    email: adminEmail,
+    phone: "+1 (800) 555-0199",
+    avatarUrl: "",
+    passwordHash: bcrypt.hashSync(adminPassword, 10),
+    provider: "credentials",
+    role: "admin",
+    disabled: false,
+    createdAt: now,
+    updatedAt: now,
+    addresses: [],
+    wishlistProductIds: [],
+  };
+
+  return { users: [seededAdmin, ...users], changed: true };
+}
+
 function readUsersFromDisk(): UserRecord[] {
   try {
     if (fs.existsSync(USERS_FILE)) {
       const raw = fs.readFileSync(USERS_FILE, "utf8");
       const parsed = JSON.parse(raw) as UserRecord[];
       if (Array.isArray(parsed)) {
-        globalForUsers.__tkUsersCache = parsed;
-        return parsed;
+        const normalized = parsed.map(normalizeUserRecord);
+        const { users: withAdmin, changed } = ensureEnvAdminSeeded(normalized);
+        globalForUsers.__tkUsersCache = withAdmin;
+        if (changed) {
+          writeUsersToDisk(withAdmin);
+        }
+        return withAdmin;
       }
     }
   } catch {
@@ -122,7 +260,10 @@ function readUsersFromDisk(): UserRecord[] {
   }
 
   if (!globalForUsers.__tkUsersCache) {
-    globalForUsers.__tkUsersCache = [...SEED_USERS];
+    const initial = SEED_USERS.map(normalizeUserRecord);
+    const { users: withAdmin } = ensureEnvAdminSeeded(initial);
+    globalForUsers.__tkUsersCache = withAdmin;
+    writeUsersToDisk(withAdmin);
   }
   return globalForUsers.__tkUsersCache;
 }
@@ -175,9 +316,31 @@ function writeTokensToDisk(tokens: PasswordResetTokenRecord[]): void {
  * Strips sensitive fields (`passwordHash`) before returning a user object to any caller/UI.
  */
 export function toSafeUser(user: UserRecord): SafeUser {
-  const { passwordHash: _ignored, ...safe } = user;
+  const normalized = normalizeUserRecord(user);
+  const { passwordHash: _ignored, ...safe } = normalized;
   void _ignored;
   return safe;
+}
+
+/**
+ * Returns all users as SafeUser objects (never exposes passwordHash), sorted newest-first.
+ */
+export function getAllSafeUsers(): SafeUser[] {
+  const users = readUsersFromDisk();
+  return users
+    .map(toSafeUser)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+}
+
+/**
+ * Counts how many active (non-disabled) admin accounts exist.
+ */
+export function countActiveAdmins(usersList?: UserRecord[]): number {
+  const users = usersList ?? readUsersFromDisk();
+  return users.filter((u) => u.role === "admin" && !u.disabled).length;
 }
 
 /**
@@ -227,6 +390,7 @@ export function getSafeUserFromSession(
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: UserRole | null;
   } | null
 ): SafeUser | null {
   if (!sessionUser) return null;
@@ -236,14 +400,20 @@ export function getSafeUserFromSession(
   }
   if (sessionUser.id) {
     const byId = getSafeUserById(sessionUser.id);
-    if (byId) return byId;
+    if (byId) return byId.disabled ? null : byId;
   }
   if (sessionUser.email) {
     const byEmail = getSafeUserByEmail(sessionUser.email);
-    if (byEmail) return byEmail;
+    if (byEmail) return byEmail.disabled ? null : byEmail;
   }
   if (sessionUser.id && sessionUser.email) {
     const now = new Date().toISOString();
+    const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+    const isEnvAdmin =
+      Boolean(adminEmail) && sessionUser.email.trim().toLowerCase() === adminEmail;
+    const role: UserRole =
+      sessionUser.role === "admin" || isEnvAdmin ? "admin" : "customer";
+
     const hydrated: UserRecord = {
       id: sessionUser.id,
       fullName:
@@ -255,6 +425,8 @@ export function getSafeUserFromSession(
       avatarUrl: sessionUser.image ?? "",
       passwordHash: DEMO_PASSWORD_HASH,
       provider: "credentials",
+      role,
+      disabled: false,
       createdAt: now,
       updatedAt: now,
       addresses: [],
@@ -277,6 +449,7 @@ export async function createUser(input: {
   password?: string;
   avatarUrl?: string;
   provider?: "credentials" | "google";
+  role?: UserRole;
   addresses?: SavedAddress[];
   wishlistProductIds?: string[];
 }): Promise<SafeUser> {
@@ -298,6 +471,8 @@ export async function createUser(input: {
     avatarUrl: input.avatarUrl ?? "",
     passwordHash,
     provider: input.provider ?? "credentials",
+    role: input.role ?? "customer",
+    disabled: false,
     createdAt: now,
     updatedAt: now,
     addresses: input.addresses ?? [],
@@ -365,6 +540,82 @@ export function updateUser(
 }
 
 /**
+ * Admin action: Enables or disables a user account.
+ * Safeguard: The last active admin account cannot be disabled.
+ */
+export function setUserDisabledStatus(
+  userId: string,
+  disabled: boolean
+): { success: true; user: SafeUser } | { success: false; error: string } {
+  const users = readUsersFromDisk();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    return { success: false, error: "Customer account not found." };
+  }
+
+  const target = users[idx]!;
+  if (disabled && target.role === "admin" && !target.disabled) {
+    const activeAdmins = countActiveAdmins(users);
+    if (activeAdmins <= 1) {
+      return {
+        success: false,
+        error: "Cannot disable the last active administrator account.",
+      };
+    }
+  }
+
+  const updated: UserRecord = {
+    ...target,
+    disabled,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const nextUsers = [...users];
+  nextUsers[idx] = updated;
+  writeUsersToDisk(nextUsers);
+
+  return { success: true, user: toSafeUser(updated) };
+}
+
+/**
+ * Admin action: Promotes or demotes a user's role ("customer" | "admin").
+ * Safeguard: The last active admin account cannot be demoted.
+ */
+export function setUserRole(
+  userId: string,
+  role: UserRole
+): { success: true; user: SafeUser } | { success: false; error: string } {
+  const users = readUsersFromDisk();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    return { success: false, error: "Customer account not found." };
+  }
+
+  const target = users[idx]!;
+  if (target.role === "admin" && role !== "admin" && !target.disabled) {
+    const activeAdmins = countActiveAdmins(users);
+    if (activeAdmins <= 1) {
+      return {
+        success: false,
+        error: "Cannot demote the last active administrator account.",
+      };
+    }
+  }
+
+  const updated: UserRecord = {
+    ...target,
+    role,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const nextUsers = [...users];
+  nextUsers[idx] = updated;
+  writeUsersToDisk(nextUsers);
+
+  return { success: true, user: toSafeUser(updated) };
+}
+
+/**
  * Updates a user's password hash using bcrypt.
  */
 export async function updateUserPassword(
@@ -388,12 +639,22 @@ export async function updateUserPassword(
 
 /**
  * Permanently deletes a user account by ID.
+ * Safeguard: Refuses to delete the last active admin account.
  */
 export function deleteUser(userId: string): boolean {
-  getDeletedUserIds().add(userId);
   const users = readUsersFromDisk();
+  const target = users.find((u) => u.id === userId);
+  if (!target) return false;
+
+  if (target.role === "admin" && !target.disabled) {
+    const activeAdmins = countActiveAdmins(users);
+    if (activeAdmins <= 1) {
+      throw new Error("LAST_ADMIN_CANNOT_BE_DELETED");
+    }
+  }
+
+  getDeletedUserIds().add(userId);
   const filtered = users.filter((u) => u.id !== userId);
-  if (filtered.length === users.length) return false;
   writeUsersToDisk(filtered);
   return true;
 }

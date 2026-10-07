@@ -33,7 +33,9 @@ export function ReviewForm({
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (rating < 1 || rating > 5) {
@@ -60,26 +62,42 @@ export function ReviewForm({
     }
 
     setError(null);
-    const newReview: ProductReview = {
-      id: `user-rev-${Date.now()}`,
-      productSlug,
-      author: name.trim(),
-      avatar: "/images/avatars/avatar-1.svg",
-      date: "Just now",
-      isoDate: new Date().toISOString().slice(0, 10),
-      verifiedPurchase: true,
-      rating,
-      title: title.trim(),
-      text: text.trim(),
-    };
+    setSubmitting(true);
 
-    onReviewSubmitted?.(newReview);
-    setSubmitted(true);
-    setRating(0);
-    setTitle("");
-    setText("");
-    setName("");
-    setEmail("");
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productSlug,
+          author: name.trim(),
+          email: email.trim(),
+          rating,
+          title: title.trim(),
+          text: text.trim(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data?.error ?? "Unable to submit your review.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (data.review) {
+        onReviewSubmitted?.(data.review);
+      }
+      setSubmitted(true);
+      setRating(0);
+      setTitle("");
+      setText("");
+      setName("");
+      setEmail("");
+    } catch {
+      setError("Network error while submitting review. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -103,10 +121,11 @@ export function ReviewForm({
           />
           <div className="space-y-1">
             <p className="font-semibold">
-              Thank you! Your review has been submitted.
+              Thank you! Your review has been submitted for moderation.
             </p>
             <p className="text-xs opacity-90">
-              Your feedback has been added to the review list for this laptop.
+              Once approved by our team, your review will appear publicly on this
+              product page.
             </p>
             <Button
               type="button"
@@ -272,8 +291,8 @@ export function ReviewForm({
           )}
 
           <div className="pt-1">
-            <Button type="submit" variant="accent">
-              Submit Review
+            <Button type="submit" variant="accent" disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit Review"}
             </Button>
           </div>
         </form>

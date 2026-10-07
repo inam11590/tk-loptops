@@ -7,6 +7,8 @@ export type LaptopCategory =
   | "student"
   | "ultrabook";
 
+export type ProductPublishStatus = "published" | "draft";
+
 export interface ProductSpecs {
   processor: string;
   ram: string;
@@ -42,10 +44,17 @@ export interface Product {
   rating: number;
   reviewCount: number;
   stock: number;
+  lowStockThreshold?: number;
+  status?: ProductPublishStatus;
+  shortDescription?: string;
   specs: ProductSpecs;
   tags: string[];
   description: string;
   highlights?: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Accessory {
@@ -58,10 +67,15 @@ export interface Accessory {
   shortSpec: string;
 }
 
+export type ReviewModerationStatus = "Pending" | "Approved" | "Rejected";
+
 export interface ProductReview {
   id: string;
+  productId?: string;
   productSlug: string;
+  productName?: string;
   author: string;
+  email?: string;
   avatar: string;
   date: string;
   isoDate: string;
@@ -69,4 +83,6 @@ export interface ProductReview {
   rating: number;
   title: string;
   text: string;
+  status?: ReviewModerationStatus;
+  createdAt?: string;
 }

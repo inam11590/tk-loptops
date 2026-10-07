@@ -15,7 +15,12 @@ import { CardForm } from "@/components/checkout/CardForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatPrice, SITE_CONFIG, type PaymentMethodId } from "@/lib/config";
+import {
+  formatPrice,
+  getSettings,
+  SITE_CONFIG,
+  type PaymentMethodId,
+} from "@/lib/config";
 import { cn } from "@/lib/utils";
 import {
   cardFormSchema,
@@ -50,10 +55,24 @@ export function PaymentOptions({
   onBack,
   onContinue,
 }: PaymentOptionsProps) {
+  const settings = getSettings();
   const [cardErrors, setCardErrors] = useState<
     Partial<Record<keyof CardFormValues, string>>
   >({});
   const [walletError, setWalletError] = useState<string | null>(null);
+
+  const enabledMethodIds = settings.enabledPaymentMethods ?? [
+    "card",
+    "cod",
+    "bank_transfer",
+    "mobile_wallet",
+  ];
+  const visiblePaymentMethods = SITE_CONFIG.checkout.paymentMethods
+    .filter((m) => enabledMethodIds.includes(m.id))
+    .map((m) => ({
+      ...m,
+      codFee: m.id === "cod" ? settings.shipping.codHandlingFee : m.codFee,
+    }));
 
   const getMethodIcon = (id: PaymentMethodId) => {
     switch (id) {
@@ -150,7 +169,7 @@ export function PaymentOptions({
         aria-label="Payment methods"
         className="space-y-3.5"
       >
-        {SITE_CONFIG.checkout.paymentMethods.map((method) => {
+        {visiblePaymentMethods.map((method) => {
           const Icon = getMethodIcon(method.id);
           const isSelected = selectedMethodId === method.id;
 
@@ -247,19 +266,19 @@ export function PaymentOptions({
                     <div>
                       <dt className="text-muted-foreground">Bank Name</dt>
                       <dd className="font-semibold text-foreground">
-                        {SITE_CONFIG.checkout.bankDetails.bankName}
+                        {settings.bankDetails.bankName}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted-foreground">Account Title</dt>
                       <dd className="font-semibold text-foreground">
-                        {SITE_CONFIG.checkout.bankDetails.accountTitle}
+                        {settings.bankDetails.accountTitle}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted-foreground">Account Number</dt>
                       <dd className="font-mono font-semibold text-foreground">
-                        {SITE_CONFIG.checkout.bankDetails.accountNumber}
+                        {settings.bankDetails.accountNumber}
                       </dd>
                     </div>
                     <div>
@@ -267,19 +286,19 @@ export function PaymentOptions({
                         Routing / SWIFT
                       </dt>
                       <dd className="font-mono font-semibold text-foreground">
-                        {SITE_CONFIG.checkout.bankDetails.routingNumber} •{" "}
-                        {SITE_CONFIG.checkout.bankDetails.swiftCode}
+                        {settings.bankDetails.routingNumber} •{" "}
+                        {settings.bankDetails.swiftCode}
                       </dd>
                     </div>
                     <div className="sm:col-span-2">
                       <dt className="text-muted-foreground">IBAN</dt>
                       <dd className="font-mono font-semibold text-foreground">
-                        {SITE_CONFIG.checkout.bankDetails.iban}
+                        {settings.bankDetails.iban}
                       </dd>
                     </div>
                   </dl>
                   <p className="border-t border-border/60 pt-2.5 text-muted-foreground">
-                    {SITE_CONFIG.checkout.bankDetails.instructions}
+                    {settings.bankDetails.instructions}
                   </p>
                 </div>
               )}

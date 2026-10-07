@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { PRODUCTS } from "@/data/products";
 import { formatPrice } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { Container } from "@/components/common/container";
 import { FadeIn } from "@/components/common/fade-in";
 import { SectionHeading } from "@/components/common/section-heading";
@@ -15,11 +15,14 @@ import { Button } from "@/components/ui/button";
  * dynamically calculated product count & starting price, and hover zoom effect.
  */
 export function BrandCards() {
-  const hpProducts = PRODUCTS.filter((p) => p.brand === "HP");
-  const dellProducts = PRODUCTS.filter((p) => p.brand === "Dell");
+  const products = getPublishedProducts();
+  const hpProducts = products.filter((p) => p.brand === "HP");
+  const dellProducts = products.filter((p) => p.brand === "Dell");
 
-  const hpLowestPrice = Math.min(...hpProducts.map((p) => p.price));
-  const dellLowestPrice = Math.min(...dellProducts.map((p) => p.price));
+  const hpLowestPrice =
+    hpProducts.length > 0 ? Math.min(...hpProducts.map((p) => p.price)) : 0;
+  const dellLowestPrice =
+    dellProducts.length > 0 ? Math.min(...dellProducts.map((p) => p.price)) : 0;
 
   const brands = [
     {

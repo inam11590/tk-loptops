@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { PRODUCTS } from "@/data/products";
 import { SITE_CONFIG } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { ProductListing } from "@/components/product/product-listing";
 import { ProductListingSkeleton } from "@/components/product/product-listing-skeleton";
 
@@ -34,13 +34,14 @@ export async function generateMetadata({
 }
 
 export default function SearchPage() {
+  const products = getPublishedProducts();
   return (
     <Suspense fallback={<ProductListingSkeleton />}>
       <ProductListing
         title="Search Laptops"
         description="Search across product names, brands (HP, Dell), processors (Intel Core i3/i5/i7/i9, Core Ultra, AMD Ryzen), and hardware tags."
         breadcrumbs={[{ label: "Search" }]}
-        products={PRODUCTS}
+        products={products}
         showSearchInput
       />
     </Suspense>

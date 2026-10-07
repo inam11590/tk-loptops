@@ -1,4 +1,6 @@
 import {
+  formatPrice,
+  getSettings,
   SITE_CONFIG,
   type DeliveryMethodConfig,
   type DeliveryMethodId,
@@ -9,42 +11,68 @@ import {
 export type CardBrand = "visa" | "mastercard" | "amex" | "discover" | "unknown";
 
 /**
- * Retrieves the configuration object for a given delivery method ID.
+ * Retrieves the configuration object for a given delivery method ID,
+ * reflecting dynamic fees and free delivery threshold from `getSettings()`.
  */
 export function getDeliveryMethodConfig(
   methodId: DeliveryMethodId = "standard"
 ): DeliveryMethodConfig {
-  return (
+  const settings = getSettings();
+  const base =
     SITE_CONFIG.checkout.deliveryMethods.find((m) => m.id === methodId) ??
-    SITE_CONFIG.checkout.deliveryMethods[0]
-  );
+    SITE_CONFIG.checkout.deliveryMethods[0];
+
+  if (base.id === "standard") {
+    return {
+      ...base,
+      fee: settings.shipping.flatShippingFee,
+      description: `Tracked ground courier with full transit insurance and signature upon arrival. Free on orders over ${formatPrice(settings.shipping.freeDeliveryThreshold)}.`,
+    };
+  }
+  if (base.id === "express") {
+    return {
+      ...base,
+      fee: settings.shipping.expressShippingFee,
+    };
+  }
+  return base;
 }
 
 /**
- * Retrieves the configuration object for a given payment method ID.
+ * Retrieves the configuration object for a given payment method ID,
+ * reflecting dynamic COD handling fee from `getSettings()`.
  */
 export function getPaymentMethodConfig(
   methodId: PaymentMethodId = "card"
 ): PaymentMethodConfig {
-  return (
+  const settings = getSettings();
+  const base =
     SITE_CONFIG.checkout.paymentMethods.find((m) => m.id === methodId) ??
-    SITE_CONFIG.checkout.paymentMethods[0]
-  );
+    SITE_CONFIG.checkout.paymentMethods[0];
+
+  if (base.id === "cod") {
+    return {
+      ...base,
+      codFee: settings.shipping.codHandlingFee,
+    };
+  }
+  return base;
 }
 
 /**
  * Calculates the delivery fee for a selected delivery method and cart subtotal.
- * Standard delivery becomes free when subtotal >= SITE_CONFIG.shipping.freeDeliveryThreshold.
+ * Standard delivery becomes free when subtotal >= getSettings().shipping.freeDeliveryThreshold.
  */
 export function calculateDeliveryFee(
   methodId: DeliveryMethodId,
   subtotal: number
 ): number {
   if (subtotal <= 0) return 0;
+  const settings = getSettings();
   const method = getDeliveryMethodConfig(methodId);
   if (
     method.freeOverThreshold &&
-    subtotal >= SITE_CONFIG.shipping.freeDeliveryThreshold
+    subtotal >= settings.shipping.freeDeliveryThreshold
   ) {
     return 0;
   }

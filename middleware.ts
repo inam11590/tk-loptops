@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
     request.cookies.has("__Secure-authjs.session-token");
 
   let isLoggedIn = false;
+  let userRole: string = "customer";
 
   if (hasSessionCookie) {
     try {
@@ -27,6 +28,9 @@ export async function middleware(request: NextRequest) {
           secureCookie: false,
         }));
       isLoggedIn = Boolean(devToken?.sub);
+      if (typeof devToken?.role === "string") {
+        userRole = devToken.role;
+      }
     } catch {
       isLoggedIn = false;
     }
@@ -37,13 +41,50 @@ export async function middleware(request: NextRequest) {
   );
   const isProtectedAccountRoute =
     pathname === "/account" || pathname.startsWith("/account/");
+  const isAdminRoute =
+    pathname === "/admin" || pathname.startsWith("/admin/");
+  const isAdminApiRoute =
+    pathname === "/api/admin" || pathname.startsWith("/api/admin/");
 
   if (
     isPublicAuthRoute &&
     isLoggedIn &&
     !nextUrl.searchParams.has("sessionExpired")
   ) {
-    return NextResponse.redirect(new URL("/account", nextUrl));
+    return NextResponse.redirect(
+      new URL(userRole === "admin" ? "/admin" : "/account", nextUrl)
+    );
+  }
+
+  if (isAdminApiRoute) {
+    if (!isLoggedIn) {
+      return NextResponse.json(
+        { error: "Authentication required." },
+        { status: 401 }
+      );
+    }
+    if (userRole !== "admin") {
+      return NextResponse.json(
+        { error: "Forbidden: Administrator privileges required." },
+        { status: 403 }
+      );
+    }
+    return NextResponse.next();
+  }
+
+  if (isAdminRoute) {
+    if (!isLoggedIn) {
+      const callbackUrl = `${pathname}${nextUrl.search}`;
+      const loginUrl = new URL("/login", nextUrl);
+      loginUrl.searchParams.set("callbackUrl", callbackUrl);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (userRole !== "admin") {
+      return NextResponse.rewrite(new URL("/forbidden", nextUrl), {
+        status: 403,
+      });
+    }
+    return NextResponse.next();
   }
 
   if (isProtectedAccountRoute && !isLoggedIn) {
@@ -58,6 +99,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin",
+    "/admin/:path*",
+    "/api/admin",
+    "/api/admin/:path*",
     "/account/:path*",
     "/login",
     "/register",

@@ -6,7 +6,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/common/section-heading";
-import { PRODUCTS } from "@/data/products";
+import { getPublishedProducts } from "@/lib/productStore";
 import { useShopStore } from "@/store/use-store";
 import type { Product } from "@/types/product";
 
@@ -27,9 +27,10 @@ export function RecentlyViewed({ currentSlug }: RecentlyViewedProps) {
 
   if (!hydrated) return null;
 
+  const publishedProducts = getPublishedProducts();
   const viewedProducts: Product[] = recentlyViewedSlugs
     .filter((slug) => slug !== currentSlug)
-    .map((slug) => PRODUCTS.find((p) => p.slug === slug))
+    .map((slug) => publishedProducts.find((p) => p.slug === slug))
     .filter((p): p is Product => Boolean(p))
     .slice(0, 4);
 

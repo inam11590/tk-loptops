@@ -1,6 +1,6 @@
 "use client";
 
-import { PRODUCTS } from "@/data/products";
+import { getPublishedProducts } from "@/lib/productStore";
 import { Container } from "@/components/common/container";
 import { FadeIn } from "@/components/common/fade-in";
 import { SectionHeading } from "@/components/common/section-heading";
@@ -10,18 +10,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 /**
  * 5. Featured Laptops
  * Interactive tabbed showcase ("Best Sellers", "New Arrivals", "Top Rated"),
- * each displaying 4 ProductCards filtered from /data/products.ts.
+ * each displaying 4 ProductCards filtered from the published product store.
  */
 export function FeaturedLaptops() {
-  const bestSellers = PRODUCTS.filter((p) =>
-    p.tags.includes("best-seller")
-  ).slice(0, 4);
+  const products = getPublishedProducts();
+  const bestSellers = products
+    .filter((p) => p.tags.includes("best-seller"))
+    .slice(0, 4);
 
-  const newArrivals = PRODUCTS.filter((p) =>
-    p.tags.includes("new-arrival")
-  ).slice(0, 4);
+  const newArrivals = products
+    .filter((p) => p.tags.includes("new-arrival"))
+    .slice(0, 4);
 
-  const topRated = [...PRODUCTS]
+  const topRated = [...products]
     .sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount)
     .slice(0, 4);
 

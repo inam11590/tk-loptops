@@ -314,15 +314,34 @@ export function UserMenu() {
         >
           {/* User Info Header */}
           <div className="border-b border-border/70 px-3 py-2.5">
-            <p className="truncate text-sm font-bold text-foreground">
-              {user.fullName}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-sm font-bold text-foreground">
+                {user.fullName}
+              </p>
+              {user.role === "admin" && (
+                <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
+                  Admin
+                </span>
+              )}
+            </div>
             <p className="truncate text-xs text-muted-foreground">
               {user.email}
             </p>
           </div>
 
           <div className="py-1.5">
+            {user.role === "admin" && (
+              <Link
+                href="/admin"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="mb-1 flex items-center gap-2.5 rounded-xl bg-accent/10 px-3 py-2 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <Shield className="h-4 w-4" aria-hidden="true" />
+                <span>Admin Panel</span>
+              </Link>
+            )}
+
             <Link
               href="/account"
               role="menuitem"

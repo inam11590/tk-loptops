@@ -9,8 +9,8 @@ import {
   Monitor,
   ShieldCheck,
 } from "lucide-react";
-import { PRODUCTS } from "@/data/products";
 import { calculateDiscountPercentage, formatPrice } from "@/lib/config";
+import { getPublishedProducts } from "@/lib/productStore";
 import { Container } from "@/components/common/container";
 import { FadeIn } from "@/components/common/fade-in";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +24,10 @@ import { CountdownTimer } from "@/components/home/CountdownTimer";
  * and a "Grab the Deal" CTA.
  */
 export function DealOfTheDay() {
+  const products = getPublishedProducts();
   const dealProduct =
-    PRODUCTS.find((p) => p.tags.includes("deal-of-the-day")) ?? PRODUCTS[2];
+    products.find((p) => p.tags.includes("deal-of-the-day")) ?? products[0];
+  if (!dealProduct) return null;
 
   const discountPercent = calculateDiscountPercentage(
     dealProduct.price,

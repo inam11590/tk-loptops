@@ -195,6 +195,15 @@ export async function loginUserAction(
     };
   }
 
+  if (user.disabled) {
+    return {
+      success: false,
+      error:
+        "This account has been disabled by an administrator. Please contact customer support for assistance.",
+      code: "ACCOUNT_DISABLED",
+    };
+  }
+
   const isPasswordValid = await verifyUserPassword(user, password);
   if (!isPasswordValid) {
     const attempt = recordFailedLoginAttempt(normalizedEmail);
@@ -561,7 +570,18 @@ export async function deleteAccountAction(
     };
   }
 
-  deleteUser(user.id);
+  try {
+    deleteUser(user.id);
+  } catch (err) {
+    if (err instanceof Error && err.message === "LAST_ADMIN_CANNOT_BE_DELETED") {
+      return {
+        success: false,
+        error: "Cannot delete the last active administrator account.",
+        code: "LAST_ADMIN",
+      };
+    }
+    throw err;
+  }
   await signOut({ redirect: false });
   revalidatePath("/", "layout");
 

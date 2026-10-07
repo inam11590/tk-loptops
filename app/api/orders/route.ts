@@ -10,6 +10,7 @@ import {
   getEstimatedDeliveryWindow,
   getPaymentMethodConfig,
 } from "@/lib/checkout";
+import { incrementCouponUsage } from "@/lib/couponStore";
 import { sendOrderConfirmationEmail, sendWelcomeEmail } from "@/lib/email";
 import {
   findOrderForTracking,
@@ -209,11 +210,30 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Compute authoritative server totals
+  // Compute authoritative server totals (including per-user coupon limit check)
+  const userIdentifier =
+    session?.user?.email || data.shipping.email.trim().toLowerCase();
   const totals = calculateCartTotals(serverCartItems, data.couponCode ?? null, {
     deliveryMethodId: data.deliveryMethodId,
     paymentMethodId: data.paymentMethodId,
+    userIdentifier,
   });
+
+  if (
+    data.couponCode &&
+    data.couponCode.trim().length > 0 &&
+    totals.couponValidation &&
+    !totals.couponValidation.valid
+  ) {
+    return NextResponse.json(
+      {
+        error: totals.couponValidation.message,
+        code: "INVALID_COUPON",
+        step: 4,
+      },
+      { status: 409 }
+    );
+  }
 
   const deliveryMethod = getDeliveryMethodConfig(data.deliveryMethodId);
   const paymentMethod = getPaymentMethodConfig(data.paymentMethodId);
@@ -395,6 +415,9 @@ export async function POST(request: NextRequest) {
   };
 
   saveOrder(newOrder);
+  if (newOrder.totals.couponCode) {
+    incrementCouponUsage(newOrder.totals.couponCode, userIdentifier);
+  }
   if (resolvedUserId) {
     linkGuestOrdersToUser(newOrder.customer.email, resolvedUserId);
   }

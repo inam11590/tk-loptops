@@ -17,6 +17,10 @@ export class AccountLockedSigninError extends CredentialsSignin {
   code = "account_locked";
 }
 
+export class AccountDisabledSigninError extends CredentialsSignin {
+  code = "account_disabled";
+}
+
 export class InvalidCredentialsSigninError extends CredentialsSignin {
   code = "invalid_credentials";
 }
@@ -63,6 +67,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new InvalidCredentialsSigninError();
         }
 
+        if (user.disabled) {
+          throw new AccountDisabledSigninError();
+        }
+
         const isValid = await verifyUserPassword(user, password);
         if (!isValid) {
           const attempt = recordFailedLoginAttempt(email);
@@ -79,6 +87,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           name: user.fullName,
           email: user.email,
+          role: user.role,
           image:
             user.avatarUrl && !user.avatarUrl.startsWith("data:")
               ? user.avatarUrl
@@ -99,7 +108,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
-        let existing = getUserByEmail(user.email);
+        const existing = getUserByEmail(user.email);
         if (!existing) {
           const created = await createUser({
             fullName: user.name || user.email.split("@")[0] || "TK Customer",
@@ -108,10 +117,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             provider: "google",
           });
           user.id = created.id;
+          user.role = created.role;
           linkGuestOrdersToUser(created.email, created.id);
         } else {
+          if (existing.disabled) {
+            return false;
+          }
           user.id = existing.id;
           user.name = existing.fullName;
+          user.role = existing.role;
           linkGuestOrdersToUser(existing.email, existing.id);
         }
       }

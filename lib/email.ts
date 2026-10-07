@@ -175,3 +175,33 @@ export async function sendWelcomeEmail(params: {
   return { sent: true };
 }
 
+/**
+ * Logs a mock order status update email to the customer when an admin changes order or payment status.
+ */
+export async function sendOrderStatusUpdateEmail(params: {
+  order: OrderRecord;
+  previousStatus?: string;
+  note?: string;
+}): Promise<{ sent: boolean; subject: string }> {
+  const { order, previousStatus, note } = params;
+  const subject = `[${SITE_CONFIG.name}] Order #${order.id} Update: ${order.status}`;
+
+  console.info(
+    `\n==================== [MOCK ORDER STATUS EMAIL] ======================\n` +
+      `To: ${order.customer.fullName} <${order.customer.email}>\n` +
+      `Subject: ${subject}\n` +
+      `Order ID: ${order.id} | Status: ${
+        previousStatus ? `${previousStatus} -> ` : ""
+      }${order.status} | Payment: ${order.paymentStatus}\n` +
+      (order.trackingNumber
+        ? `Courier: ${order.courier || "Express Courier"} | Tracking #: ${order.trackingNumber}\n`
+        : "") +
+      (note ? `Update Note: ${note}\n` : "") +
+      `Track Order: ${SITE_CONFIG.url}/orders/track?orderId=${order.id}\n` +
+      `=====================================================================\n`
+  );
+
+  return { sent: true, subject };
+}
+
+
