@@ -8,10 +8,12 @@ import {
   Truck,
 } from "lucide-react";
 import { SITE_CONFIG } from "@/lib/config";
+import { cn } from "@/lib/utils";
 
 interface AuthLayoutProps {
   title: string;
   subtitle: string;
+  activeTab?: "login" | "register";
   children: React.ReactNode;
 }
 
@@ -41,7 +43,12 @@ const BRAND_BENEFITS = [
  * Desktop: Rich primary navy brand panel on the left, form card on the right.
  * Mobile: Form card only for distraction-free completion.
  */
-export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
+export function AuthLayout({
+  title,
+  subtitle,
+  activeTab,
+  children,
+}: AuthLayoutProps) {
   return (
     <section className="min-h-[calc(100vh-5rem)] bg-surface py-8 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -128,6 +135,41 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
           {/* Right Column: Form Panel */}
           <div className="flex flex-col justify-center p-6 sm:p-10 lg:col-span-7 xl:p-12">
             <div className="mx-auto w-full max-w-md space-y-6">
+              {activeTab && (
+                <div
+                  role="tablist"
+                  aria-label="Authentication mode"
+                  className="grid grid-cols-2 rounded-2xl border border-border/80 bg-surface p-1"
+                >
+                  <Link
+                    href="/login"
+                    role="tab"
+                    aria-selected={activeTab === "login"}
+                    className={cn(
+                      "flex h-10 items-center justify-center rounded-xl text-xs font-bold transition-all",
+                      activeTab === "login"
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/register"
+                    role="tab"
+                    aria-selected={activeTab === "register"}
+                    className={cn(
+                      "flex h-10 items-center justify-center rounded-xl text-xs font-bold transition-all",
+                      activeTab === "register"
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Create Account
+                  </Link>
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                   {title}

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, isGoogleAuthEnabled } from "@/auth";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { getSafeUserFromSession } from "@/lib/users";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -24,7 +25,8 @@ export default async function RegisterPage({
   searchParams,
 }: RegisterPageProps) {
   const session = await auth();
-  if (session?.user?.id) {
+  const existingUser = getSafeUserFromSession(session?.user);
+  if (existingUser) {
     redirect("/account");
   }
 
@@ -34,6 +36,7 @@ export default async function RegisterPage({
     <AuthLayout
       title="Create Your Account"
       subtitle="Join TK Laptop to track orders, save shipping addresses, and manage your 1-year warranty."
+      activeTab="register"
     >
       <RegisterForm
         callbackUrl={resolvedParams.callbackUrl}

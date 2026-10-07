@@ -18,7 +18,7 @@ import { DashboardWishlistStat } from "@/components/account/DashboardWishlistSta
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/config";
 import { getOrdersByUser, type OrderStatus } from "@/lib/orders";
-import { getSafeUserById, MAX_SAVED_ADDRESSES } from "@/lib/users";
+import { getSafeUserFromSession, MAX_SAVED_ADDRESSES } from "@/lib/users";
 import { cn } from "@/lib/utils";
 
 function getOrderStatusBadgeClasses(status: OrderStatus): string {
@@ -54,9 +54,9 @@ export default async function AccountDashboardPage() {
     redirect("/login?callbackUrl=/account");
   }
 
-  const user = getSafeUserById(session.user.id);
+  const user = getSafeUserFromSession(session.user);
   if (!user) {
-    redirect("/login?callbackUrl=/account");
+    redirect("/login?callbackUrl=/account&sessionExpired=1");
   }
 
   const orders = getOrdersByUser(user.id, user.email);

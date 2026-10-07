@@ -209,6 +209,25 @@ export function getSafeUserByEmail(email: string): SafeUser | null {
 }
 
 /**
+ * Resolves a SafeUser from a NextAuth session user object (by ID first, then email fallback).
+ * Returns null if the session user no longer exists in the store.
+ */
+export function getSafeUserFromSession(
+  sessionUser?: { id?: string | null; email?: string | null } | null
+): SafeUser | null {
+  if (!sessionUser) return null;
+  if (sessionUser.id) {
+    const byId = getSafeUserById(sessionUser.id);
+    if (byId) return byId;
+  }
+  if (sessionUser.email) {
+    const byEmail = getSafeUserByEmail(sessionUser.email);
+    if (byEmail) return byEmail;
+  }
+  return null;
+}
+
+/**
  * Creates a new user with a bcrypt-hashed password. Throws if the email is already registered.
  */
 export async function createUser(input: {

@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
-import { verifyPasswordResetToken } from "@/lib/users";
+import {
+  getSafeUserFromSession,
+  verifyPasswordResetToken,
+} from "@/lib/users";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -24,7 +27,8 @@ export default async function ResetPasswordPage({
   params,
 }: ResetPasswordPageProps) {
   const session = await auth();
-  if (session?.user?.id) {
+  const existingUser = getSafeUserFromSession(session?.user);
+  if (existingUser) {
     redirect("/account");
   }
 

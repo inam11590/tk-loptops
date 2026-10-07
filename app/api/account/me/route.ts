@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getOrdersByUser } from "@/lib/orders";
-import { getSafeUserById } from "@/lib/users";
+import { getSafeUserFromSession } from "@/lib/users";
 
 /**
  * GET /api/account/me
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ user: null }, { status: 200 });
   }
 
-  const safeUser = getSafeUserById(session.user.id);
+  const safeUser = getSafeUserFromSession(session.user);
   if (!safeUser) {
     return NextResponse.json({ user: null }, { status: 200 });
   }

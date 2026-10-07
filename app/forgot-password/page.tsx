@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+import { getSafeUserFromSession } from "@/lib/users";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -18,7 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ForgotPasswordPage() {
   const session = await auth();
-  if (session?.user?.id) {
+  const existingUser = getSafeUserFromSession(session?.user);
+  if (existingUser) {
     redirect("/account");
   }
 

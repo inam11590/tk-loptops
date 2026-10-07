@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, isGoogleAuthEnabled } from "@/auth";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { getSafeUserFromSession } from "@/lib/users";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -17,12 +18,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 interface LoginPageProps {
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; sessionExpired?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const session = await auth();
-  if (session?.user?.id) {
+  const existingUser = getSafeUserFromSession(session?.user);
+  if (existingUser) {
     redirect("/account");
   }
 
@@ -32,6 +34,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <AuthLayout
       title="Welcome Back"
       subtitle="Sign in to access your orders, saved addresses, and synced wishlist."
+      activeTab="login"
     >
       <LoginForm
         callbackUrl={resolvedParams.callbackUrl}

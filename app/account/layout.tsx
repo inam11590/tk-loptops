@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
 import { Container } from "@/components/common/container";
-import { getSafeUserById } from "@/lib/users";
+import { getSafeUserFromSession } from "@/lib/users";
 
 export const metadata: Metadata = {
   robots: {
@@ -22,9 +22,9 @@ export default async function AccountLayout({
     redirect("/login?callbackUrl=/account");
   }
 
-  const user = getSafeUserById(session.user.id);
+  const user = getSafeUserFromSession(session.user);
   if (!user) {
-    redirect("/login?callbackUrl=/account");
+    redirect("/login?callbackUrl=/account&sessionExpired=1");
   }
 
   return (
